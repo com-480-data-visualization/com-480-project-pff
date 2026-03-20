@@ -1,5 +1,7 @@
+# Milestone 1 - Data Visualization
+
 ## Dataset
-For this project we will be using the dataset NBA_Shots_04_25 GitHub dataset. It contains NBA regular-season shot data from 2003–2004 to 2024–2025 and includes one CSV per season as well as a merged dataset, covering over two decades of shot attempts. 
+For this project we will be using the dataset NBA_Shots_04_25 GitHub dataset (https://github.com/DomSamangy/NBA_Shots_04_25). It contains NBA regular-season shot data from 2003–2004 to 2024–2025 and includes one CSV per season as well as a merged dataset, covering over two decades of shot attempts. 
 
 Each of the entries of the dataset contains the information related to a single shot that was taken. Among these information we can find the following:
 - Player who took the shot
