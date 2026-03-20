@@ -43,7 +43,7 @@ By court zone, the restricted area concentrates the highest shot volume and the 
 
 Finally, shot volume decreases slightly across quarters while FG% drops more noticeably toward the end of regulation, likely reflecting fatigue and tighter defense in close games.
 
-For more details, check 'eda.ipynb".
+For more details, check 'eda.ipynb'.
 
 ## Related Work
 
