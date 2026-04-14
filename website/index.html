@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA Shots — 4.4 Million Stories</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <div class="nav-logo">NBA <span class="accent">SHOTS</span></div>
+    <ul class="nav-links">
+      <li><a href="#hero">Court</a></li>
+      <li><a href="#revolution">Revolution</a></li>
+      <li><a href="#fingerprint">Fingerprints</a></li>
+      <li><a href="#value">Value</a></li>
+      <li><a href="#clutch">Clutch</a></li>
+    </ul>
+  </nav>
+
+  <!-- ① HERO -->
+  <section id="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-overlay">
+      <div class="hero-top">
+        <div class="hero-badge">2004 — 2025</div>
+        <h1 class="hero-title">4.4 Million<br><span class="accent">Shots</span></h1>
+        <p class="hero-sub">Every NBA regular-season field goal attempt.<br>One court. 22 seasons.</p>
+      </div>
+      <div class="hero-bottom">
+        <div class="hero-controls">
+          <div class="hero-year-row">
+            <button id="hero-all-btn" class="btn-pill active">All</button>
+            <input type="range" id="hero-year" min="2004" max="2025" value="2004" step="1">
+            <span class="year-display" id="hero-year-label">2004</span>
+          </div>
+          <div class="hero-legend">
+            <span class="legend-dot made"></span><span>Made</span>
+            <span class="legend-dot missed"></span><span>Missed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-hint">scroll to explore ↓</div>
+  </section>
+
+  <!-- ② REVOLUTION -->
+  <section id="revolution" class="reveal">
+    <div class="section-layout">
+      <div class="section-text">
+        <div class="section-tag">01 — Evolution</div>
+        <h2>The Death of<br>the Mid-Range</h2>
+        <p>Analytics revealed a simple truth: mid-range shots deliver below-average efficiency for only 2 points, while 3-pointers and paint shots offer far better expected value. Teams listened.</p>
+        <p class="stat-callout">In 2004: <strong id="rev-3pt-pct">—</strong> of shots were 3-pointers</p>
+        <div class="rev-controls">
+          <button id="rev-play" class="btn-play">▶ Play</button>
+          <input type="range" id="rev-slider" min="2004" max="2025" value="2004" step="1">
+          <span class="year-display" id="rev-year-label">2004</span>
+        </div>
+        <div class="rev-legend">
+          <div class="legend-row"><span class="swatch" style="background:#2166ac"></span>Below average</div>
+          <div class="legend-row"><span class="swatch" style="background:#f7f7f7"></span>League average</div>
+          <div class="legend-row"><span class="swatch" style="background:#d6604d"></span>Above average</div>
+        </div>
+      </div>
+      <div class="section-viz">
+        <svg id="revolution-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ FINGERPRINT -->
+  <section id="fingerprint" class="reveal">
+    <div class="section-layout">
+      <div class="section-text">
+        <div class="section-tag">02 — Players</div>
+        <h2>Shot<br>Fingerprints</h2>
+        <p>Every player has a unique shot profile. The radial chart shows how each player distributes their attempts across court zones, and how efficiently they convert from each area.</p>
+        <div class="player-tabs" id="player-tabs">
+          <button class="player-tab active" data-player="LeBron James">LeBron James</button>
+          <button class="player-tab" data-player="Stephen Curry">S. Curry</button>
+          <button class="player-tab" data-player="Victor Wembanyama">Wembanyama</button>
+        </div>
+        <div class="player-stats" id="player-stats"></div>
+        <div class="fingerprint-legend">
+          <div class="legend-row"><span class="swatch" style="background:#2166ac"></span>Low FG%</div>
+          <div class="legend-row"><span class="swatch" style="background:#f7820b"></span>High FG%</div>
+          <div class="legend-row small-text">Bar length = shot frequency</div>
+        </div>
+      </div>
+      <div class="section-viz">
+        <svg id="fingerprint-svg" viewBox="0 0 420 420" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ VALUE -->
+  <section id="value" class="reveal">
+    <div class="section-layout section-layout--reverse">
+      <div class="section-viz">
+        <svg id="value-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="section-text">
+        <div class="section-tag">03 — Analytics</div>
+        <h2>Where Should<br>You Shoot?</h2>
+        <p>Expected value maps each spot by FG% × point value. The restricted area and corners glow; the mid-range is cold. This map is why the game changed.</p>
+        <div class="toggle-group">
+          <button class="toggle-btn active" data-mode="ev">Expected Value</button>
+          <button class="toggle-btn" data-mode="fg">FG%</button>
+          <button class="toggle-btn" data-mode="vol">Shot Volume</button>
+        </div>
+        <div class="value-legend" id="value-legend"></div>
+        <div class="value-note" id="value-note">
+          Expected points per attempt. League avg ≈ <strong>0.93</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑤ CLUTCH -->
+  <section id="clutch" class="reveal">
+    <div class="section-layout">
+      <div class="section-text">
+        <div class="section-tag">04 — Clutch</div>
+        <h2>Final<br>Seconds</h2>
+        <p>Every shot taken in the last 5 seconds of Q4, across 22 seasons. Who shoots? From where? And who actually delivers?</p>
+        <div class="filter-group">
+          <select id="clutch-team" class="filter-select">
+            <option value="">All Teams</option>
+          </select>
+          <select id="clutch-player" class="filter-select">
+            <option value="">All Players</option>
+          </select>
+        </div>
+        <div class="clutch-stats" id="clutch-stats"></div>
+      </div>
+      <div class="section-viz">
+        <svg id="clutch-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="clutch-tooltip" class="tooltip"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Data: <a href="https://www.nba.com" target="_blank">NBA.com</a> · Seasons 2003‑04 to 2024‑25 · 4,444,820 shots</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script type="module" src="js/hero.js"></script>
+  <script src="js/court.js"></script>
+  <script src="js/revolution.js"></script>
+  <script src="js/fingerprint.js"></script>
+  <script src="js/value.js"></script>
+  <script src="js/clutch.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
