@@ -23,9 +23,11 @@
     <div class="nav-logo">NBA <span class="accent">SHOTS</span></div>
     <ul class="nav-links">
       <li><a href="#hero">Court</a></li>
-      <li><a href="#revolution">Revolution</a></li>
-      <li><a href="#fingerprint">Fingerprints</a></li>
       <li><a href="#value">Value</a></li>
+      <li><a href="#revolution">Revolution</a></li>
+      <li><a href="#team-dna">Teams</a></li>
+      <li><a href="#fingerprint">Players</a></li>
+      <li><a href="#evolution">Transfers</a></li>
       <li><a href="#clutch">Clutch</a></li>
     </ul>
   </nav>
@@ -37,15 +39,10 @@
       <div class="hero-top">
         <div class="hero-badge">2004 — 2025</div>
         <h1 class="hero-title">4.4 Million<br><span class="accent">Shots</span></h1>
-        <p class="hero-sub">Every NBA regular-season field goal attempt.<br>One court. 22 seasons.</p>
+        <p class="hero-sub">Every NBA regular-season field goal attempt.<br>One court. 22 seasons. A visual story about how basketball changed.</p>
       </div>
       <div class="hero-bottom">
         <div class="hero-controls">
-          <div class="hero-year-row">
-            <button id="hero-all-btn" class="btn-pill active">All</button>
-            <input type="range" id="hero-year" min="2004" max="2025" value="2004" step="1">
-            <span class="year-display" id="hero-year-label">2004</span>
-          </div>
           <div class="hero-legend">
             <span class="legend-dot made"></span><span>Made</span>
             <span class="legend-dot missed"></span><span>Missed</span>
@@ -55,67 +52,16 @@
     </div>
     <div class="scroll-hint">scroll to explore ↓</div>
   </section>
-
-  <!-- ② REVOLUTION -->
-  <section id="revolution" class="reveal">
-    <div class="section-layout">
-      <div class="section-text">
-        <div class="section-tag">01 — Evolution</div>
-        <h2>The Death of<br>the Mid-Range</h2>
-        <p>Analytics revealed a simple truth: mid-range shots deliver below-average efficiency for only 2 points, while 3-pointers and paint shots offer far better expected value. Teams listened.</p>
-        <p class="stat-callout">In 2004: <strong id="rev-3pt-pct">—</strong> of shots were 3-pointers</p>
-        <div class="rev-controls">
-          <button id="rev-play" class="btn-play">▶ Play</button>
-          <input type="range" id="rev-slider" min="2004" max="2025" value="2004" step="1">
-          <span class="year-display" id="rev-year-label">2004</span>
-        </div>
-        <div class="rev-legend">
-          <div class="legend-row"><span class="swatch" style="background:#2166ac"></span>Below average</div>
-          <div class="legend-row"><span class="swatch" style="background:#f7f7f7"></span>League average</div>
-          <div class="legend-row"><span class="swatch" style="background:#d6604d"></span>Above average</div>
-        </div>
-      </div>
-      <div class="section-viz">
-        <svg id="revolution-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet"></svg>
-      </div>
-    </div>
-  </section>
-
-  <!-- ③ FINGERPRINT -->
-  <section id="fingerprint" class="reveal">
-    <div class="section-layout">
-      <div class="section-text">
-        <div class="section-tag">02 — Players</div>
-        <h2>Shot<br>Fingerprints</h2>
-        <p>Every player has a unique shot profile. The radial chart shows how each player distributes their attempts across court zones, and how efficiently they convert from each area.</p>
-        <div class="player-tabs" id="player-tabs">
-          <button class="player-tab active" data-player="LeBron James">LeBron James</button>
-          <button class="player-tab" data-player="Stephen Curry">S. Curry</button>
-          <button class="player-tab" data-player="Victor Wembanyama">Wembanyama</button>
-        </div>
-        <div class="player-stats" id="player-stats"></div>
-        <div class="fingerprint-legend">
-          <div class="legend-row"><span class="swatch" style="background:#2166ac"></span>Low FG%</div>
-          <div class="legend-row"><span class="swatch" style="background:#f7820b"></span>High FG%</div>
-          <div class="legend-row small-text">Bar length = shot frequency</div>
-        </div>
-      </div>
-      <div class="section-viz">
-        <svg id="fingerprint-svg" viewBox="0 0 420 420" preserveAspectRatio="xMidYMid meet"></svg>
-      </div>
-    </div>
-  </section>
-
-  <!-- ④ VALUE -->
+  <!-- ② VALUE -->
   <section id="value" class="reveal">
     <div class="section-layout section-layout--reverse">
       <div class="section-viz">
         <svg id="value-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet"></svg>
       </div>
       <div class="section-text">
-        <div class="section-tag">03 — Analytics</div>
-        <h2>Where Should<br>You Shoot?</h2>
-        <p>Expected value maps each spot by FG% × point value. The restricted area and corners glow; the mid-range is cold. This map is why the game changed.</p>
+        <div class="section-tag">01 — The Map</div>
+        <h2>The Geometry<br>of Good Shots</h2>
+        <p>Before asking how the NBA changed, we first ask what the court rewards. Expected value combines <strong>FG% × point value</strong>: the rim and threes become obvious targets, while many mid-range shots look expensive.</p>
         <div class="toggle-group">
           <button class="toggle-btn active" data-mode="ev">Expected Value</button>
           <button class="toggle-btn" data-mode="fg">FG%</button>
@@ -128,18 +74,113 @@
       </div>
     </div>
   </section>
-
-  <!-- ⑤ CLUTCH -->
+  <!-- ③ REVOLUTION -->
+  <section id="revolution" class="reveal">
+    <div class="section-layout">
+      <div class="section-text">
+        <div class="section-tag">02 — League Adaptation</div>
+        <h2>The League<br>Learns the Map</h2>
+        <p>Once the value map was clear, shot selection started to move. Drag through the seasons to see the league trade mid-range attempts for shots at the rim and behind the arc.</p>
+        <p class="stat-callout" id="rev-summary">Drag the season slider to watch the NBA shot map mutate after teams learned where the value was.</p>
+        <div class="metric-grid" id="rev-metrics"></div>
+        <div class="rev-controls">
+          <button id="rev-play" class="btn-play">▶ Play</button>
+          <input type="range" id="rev-slider" min="2004" max="2025" value="2004" step="1">
+          <span class="year-display" id="rev-year-label">2004</span>
+        </div>
+      </div>
+      <div class="section-viz">
+        <div class="map-wrap">
+          <svg id="revolution-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="map-legend">
+            <div class="map-legend-title">Shot frequency</div>
+            <div class="legend-row"><span class="swatch" style="background:#2166ac"></span>Below avg</div>
+            <div class="legend-row"><span class="swatch" style="background:#f7f7f7"></span>League avg</div>
+            <div class="legend-row"><span class="swatch" style="background:#d6604d"></span>Above avg</div>
+          </div>
+        </div>
+        <svg id="revolution-trend" class="revolution-trend" viewBox="0 0 520 160" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+  </section>
+  <!-- ④ TEAM DNA -->
+  <section id="team-dna" class="reveal">
+    <div class="section-layout section-layout--reverse">
+      <div class="section-viz">
+        <svg id="team-svg" viewBox="0 0 800 660" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="section-text">
+        <div class="section-tag">03 — Team Response</div>
+        <h2>How Teams<br>Followed the Math</h2>
+        <p>The league moved as a whole, but each team chose its own geometry. Compare any team-season with the league and that year’s champion to see who leaned hardest into rim pressure, corners, or above-the-break threes.</p>
+        <div class="filter-group">
+          <select id="team-season" class="filter-select"></select>
+          <select id="team-name" class="filter-select"></select>
+          <button id="team-champion" class="btn-play">Show champion</button>
+        </div>
+        <div class="team-stats" id="team-stats"></div>
+      </div>
+    </div>
+  </section>
+  <!-- ⑤ FINGERPRINT -->
+  <section id="fingerprint" class="reveal">
+    <div class="section-layout">
+      <div class="section-text">
+        <div class="section-tag">04 — Player Identity</div>
+        <h2>Player Shot<br>Fingerprints</h2>
+        <p>After teams changed the geometry, players became the faces of different shot economies. These fingerprints show where attempts come from, how efficient each area is, and how each player’s three-point diet evolved.</p>
+        <div class="player-tabs" id="player-tabs">
+          <button class="player-tab active" data-player="LeBron James">LeBron James</button>
+          <button class="player-tab" data-player="Stephen Curry">S. Curry</button>
+          <button class="player-tab" data-player="Victor Wembanyama">Wembanyama</button>
+        </div>
+        <div class="player-stats" id="player-stats"></div>
+        <svg id="fingerprint-trend" class="mini-trend" viewBox="0 0 320 90" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="section-viz">
+        <div class="fingerprint-wrap">
+          <svg id="fingerprint-svg" viewBox="0 0 420 420" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="map-legend fingerprint-map-legend">
+            <div class="map-legend-title">Shot fingerprint</div>
+            <div class="fg-gradient"></div>
+            <div class="fg-gradient-labels">
+              <span>28% FG</span>
+              <span>65% FG</span>
+            </div>
+            <div class="legend-row small-text">Length = frequency</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ⑥ PLAYER EVOLUTION -->
+  <section id="evolution" class="reveal">
+    <div class="section-layout">
+      <div class="section-text">
+        <div class="section-tag">05 — Player Movement</div>
+        <h2>When Stars<br>Change Teams</h2>
+        <p>If teams have distinct shot identities, what happens when a star changes context? This view compares team stints to see which habits travel and which adapt to a new system.</p>
+        <div class="player-tabs" id="evolution-tabs">
+          <button class="player-tab active" data-player="LeBron James">LeBron</button>
+          <button class="player-tab" data-player="Kevin Durant">Durant</button>
+          <button class="player-tab" data-player="James Harden">Harden</button>
+          <button class="player-tab" data-player="Russell Westbrook">Westbrook</button>
+        </div>
+        <div class="team-stats" id="evolution-stats"></div>
+      </div>
+      <div class="section-viz">
+        <svg id="evolution-svg" viewBox="0 0 620 430" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>
+  </section>
+  <!-- ⑦ CLUTCH -->
   <section id="clutch" class="reveal">
     <div class="section-layout">
       <div class="section-text">
-        <div class="section-tag">04 — Clutch</div>
-        <h2>Final<br>Seconds</h2>
-        <p>Every shot taken in the last 5 seconds of Q4, across 22 seasons. Who shoots? From where? And who actually delivers?</p>
+        <div class="section-tag">06 — Pressure Test</div>
+        <h2>When the Math<br>Meets Pressure</h2>
+        <p>At the end of games, strategy meets urgency. The heatmap compares where shots are taken in the last five seconds of Q4 against the rest of the game, then the scatterplot shows who actually converts those pressure attempts.</p>
         <div class="filter-group">
-          <select id="clutch-team" class="filter-select">
-            <option value="">All Teams</option>
-          </select>
           <select id="clutch-player" class="filter-select">
             <option value="">All Players</option>
           </select>
@@ -147,7 +188,16 @@
         <div class="clutch-stats" id="clutch-stats"></div>
       </div>
       <div class="section-viz">
-        <svg id="clutch-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="map-wrap">
+          <svg id="clutch-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="map-legend clutch-map-legend">
+            <div class="map-legend-title">Clutch shot frequency</div>
+            <div class="legend-row"><span class="swatch" style="background:#2166ac"></span>Less than normal</div>
+            <div class="legend-row"><span class="swatch" style="background:#f7f7f7"></span>Same profile</div>
+            <div class="legend-row"><span class="swatch" style="background:#d6604d"></span>More than normal</div>
+          </div>
+        </div>
+        <svg id="clutcher-svg" class="clutcher-scatter" viewBox="0 0 520 260" preserveAspectRatio="none"></svg>
         <div id="clutch-tooltip" class="tooltip"></div>
       </div>
     </div>
@@ -159,12 +209,14 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-  <script type="module" src="js/hero.js"></script>
+  <script type="module" src="js/hero.js?v=3"></script>
   <script src="js/court.js"></script>
   <script src="js/revolution.js"></script>
   <script src="js/fingerprint.js"></script>
   <script src="js/value.js"></script>
   <script src="js/clutch.js"></script>
+  <script src="js/team.js"></script>
+  <script src="js/player-evolution.js"></script>
   <script src="js/main.js"></script>
 
 </body>

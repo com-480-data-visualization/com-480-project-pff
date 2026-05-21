@@ -20,6 +20,38 @@ PLAYERS = {
     "Victor Wembanyama":   1641705,
 }
 
+EVOLUTION_PLAYERS = {
+    "LeBron James": 2544,
+    "Kevin Durant": 201142,
+    "James Harden": 201935,
+    "Russell Westbrook": 201566,
+}
+
+CHAMPIONS = {
+    2004: "Detroit Pistons",
+    2005: "San Antonio Spurs",
+    2006: "Miami Heat",
+    2007: "San Antonio Spurs",
+    2008: "Boston Celtics",
+    2009: "Los Angeles Lakers",
+    2010: "Los Angeles Lakers",
+    2011: "Dallas Mavericks",
+    2012: "Miami Heat",
+    2013: "Miami Heat",
+    2014: "San Antonio Spurs",
+    2015: "Golden State Warriors",
+    2016: "Cleveland Cavaliers",
+    2017: "Golden State Warriors",
+    2018: "Golden State Warriors",
+    2019: "Toronto Raptors",
+    2020: "Los Angeles Lakers",
+    2021: "Milwaukee Bucks",
+    2022: "Golden State Warriors",
+    2023: "Denver Nuggets",
+    2024: "Boston Celtics",
+    2025: "Oklahoma City Thunder",
+}
+
 # ── Load ──────────────────────────────────────────────────────────────────────
 print("Loading CSVs…")
 csv_files = sorted(glob.glob(f"{DATA_DIR}/NBA_*_Shots.csv"))
@@ -38,10 +70,70 @@ df["LOC_Y"] = pd.to_numeric(df["LOC_Y"], errors="coerce")
 df["SHOT_DISTANCE"] = pd.to_numeric(df["SHOT_DISTANCE"], errors="coerce")
 df["SEASON_1"] = df["SEASON_1"].astype("int16")
 df["IS_3PT"] = (df["SHOT_TYPE"] == "3PT Field Goal").astype("Int8")
+df["PT_VALUE"] = df["IS_3PT"].map({1: 3, 0: 2}).astype("int8")
+
+# The 2020-2022 source CSVs use a compressed coordinate system:
+#   LOC_X is in tenths of feet, and LOC_Y is stored as (court_y + 52.5) / 10.
+# SHOT_DISTANCE and zone labels are already correct, so only the coordinates
+# need to be brought back to the same court-space used by the other seasons.
+compressed_coords = df["SEASON_1"].isin([2020, 2021, 2022])
+df.loc[compressed_coords, "LOC_X"] = df.loc[compressed_coords, "LOC_X"] * 10
+df.loc[compressed_coords, "LOC_Y"] = df.loc[compressed_coords, "LOC_Y"] * 10 - 52.5
+
 df = df.dropna(subset=["LOC_X", "LOC_Y"]).reset_index(drop=True)
 # Remove backcourt heaves (distance > 50 ft)
 df = df[df["SHOT_DISTANCE"] <= 50].reset_index(drop=True)
 print(f"  {len(df):,} rows after cleaning")
+
+ZONES = [
+    "Restricted Area",
+    "In The Paint (Non-RA)",
+    "Mid-Range",
+    "Left Corner 3",
+    "Right Corner 3",
+    "Above the Break 3",
+    "Backcourt",
+]
+
+
+def clean_float(value, digits=4):
+    if pd.isna(value):
+        return 0
+    return round(float(value), digits)
+
+
+def zone_profile(sub):
+    grouped = (
+        sub.groupby("BASIC_ZONE", observed=True)
+        .agg(count=("SHOT_MADE", "count"), made=("SHOT_MADE", "sum"))
+        .reindex(ZONES, fill_value=0)
+        .reset_index()
+    )
+    total = int(grouped["count"].sum())
+    records = []
+    for _, row in grouped.iterrows():
+        count = int(row["count"])
+        records.append({
+            "zone": row["BASIC_ZONE"],
+            "count": count,
+            "share": clean_float(count / total if total else 0),
+            "fg": clean_float(row["made"] / count if count else 0),
+        })
+    return records
+
+
+def basic_profile(sub):
+    total = len(sub)
+    return {
+        "shots": int(total),
+        "fg": clean_float(sub["SHOT_MADE"].mean()),
+        "three_rate": clean_float(sub["IS_3PT"].mean()),
+        "mid_rate": clean_float((sub["BASIC_ZONE"] == "Mid-Range").mean()),
+        "rim_rate": clean_float((sub["BASIC_ZONE"] == "Restricted Area").mean()),
+        "corner3_rate": clean_float(sub["BASIC_ZONE"].isin(["Left Corner 3", "Right Corner 3"]).mean()),
+        "ev": clean_float((sub["SHOT_MADE"] * sub["PT_VALUE"]).mean()),
+        "avg_dist": clean_float(sub["SHOT_DISTANCE"].mean(), 2),
+    }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. HERO PARTICLES  (50k sampled shots)
@@ -100,6 +192,7 @@ def hex_bin(sub, grid=GRID):
 
 seasons = sorted(df["SEASON_1"].unique().tolist())
 hex_data = {}
+season_metrics = {}
 
 # Also compute league averages per cell across all seasons (for relative coloring)
 all_hex = hex_bin(df)
@@ -114,9 +207,14 @@ for season in seasons:
         avg = league_avg_count.get((h["q"], h["r"]), 1)
         h["rel"] = round(h["count"] / max(avg, 1), 3)  # relative to league avg cell
     hex_data[int(season)] = bins
+    season_metrics[int(season)] = basic_profile(sub)
 
 with open(f"{OUT_DIR}/hex_by_season.json", "w") as f:
-    json.dump({"seasons": [int(s) for s in seasons], "data": hex_data}, f, separators=(",", ":"))
+    json.dump({
+        "seasons": [int(s) for s in seasons],
+        "metrics": season_metrics,
+        "data": hex_data,
+    }, f, separators=(",", ":"))
 print(f"  {len(seasons)} seasons written")
 
 
@@ -124,16 +222,6 @@ print(f"  {len(seasons)} seasons written")
 # 3. PLAYER FINGERPRINTS
 # ─────────────────────────────────────────────────────────────────────────────
 print("Generating players_fingerprint.json…")
-
-ZONES = [
-    "Restricted Area",
-    "In The Paint (Non-RA)",
-    "Mid-Range",
-    "Left Corner 3",
-    "Right Corner 3",
-    "Above the Break 3",
-    "Backcourt",
-]
 
 fingerprint_data = {}
 for name, pid in PLAYERS.items():
@@ -154,8 +242,9 @@ for name, pid in PLAYERS.items():
 
     # Season-by-season 3PT rate (for sparkline)
     seasons_3pt = (
-        sub.groupby("SEASON_1")
-        .apply(lambda g: round(g["IS_3PT"].mean(), 4))
+        sub.groupby("SEASON_1", observed=True)["IS_3PT"]
+        .mean()
+        .round(4)
         .reset_index()
     )
     seasons_3pt.columns = ["season", "three_rate"]
@@ -262,6 +351,231 @@ with open(f"{OUT_DIR}/clutch_shots.json", "w") as f:
         "shots": shots_compact,
     }, f, separators=(",", ":"))
 print(f"  {len(shots_compact):,} Q4-clutch shots written")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. CLUTCH VS NORMAL STRATEGY
+# ─────────────────────────────────────────────────────────────────────────────
+print("Generating clutch_comparison.json…")
+
+def binned_share(sub, grid=GRID):
+    hex_w = (X_RANGE[1] - X_RANGE[0]) / grid
+    hex_h = hex_w * math.sqrt(3) / 2
+    rows_n = int((Y_RANGE[1] - Y_RANGE[0]) / hex_h) + 1
+
+    tmp = sub[["LOC_X", "LOC_Y", "SHOT_MADE"]].copy()
+    tmp["q"] = ((tmp["LOC_X"] - X_RANGE[0]) / hex_w).clip(0, grid - 1).astype(int)
+    tmp["r"] = ((tmp["LOC_Y"] - Y_RANGE[0]) / hex_h).clip(0, rows_n - 1).astype(int)
+    grouped = (
+        tmp.groupby(["q", "r"], observed=True)
+        .agg(count=("SHOT_MADE", "count"), made=("SHOT_MADE", "sum"))
+        .reset_index()
+    )
+    total = max(int(grouped["count"].sum()), 1)
+    result = {}
+    for _, row in grouped.iterrows():
+        q, r = int(row["q"]), int(row["r"])
+        count = int(row["count"])
+        result[(q, r)] = {
+            "q": q,
+            "r": r,
+            "cx": round(X_RANGE[0] + (q + 0.5) * hex_w, 2),
+            "cy": round(Y_RANGE[0] + (r + 0.5) * hex_h, 2),
+            "count": count,
+            "share": count / total,
+            "fg": float(row["made"] / count) if count else 0,
+        }
+    return result
+
+rest = df.drop(clutch.index)
+clutch_bins = binned_share(clutch)
+rest_bins = binned_share(rest)
+all_keys = sorted(set(clutch_bins) | set(rest_bins))
+
+comparison_bins = []
+for key in all_keys:
+    c = clutch_bins.get(key)
+    r = rest_bins.get(key)
+    base = c or r
+    clutch_share = c["share"] if c else 0
+    rest_share = r["share"] if r else 0
+    ratio = (clutch_share + 1e-7) / (rest_share + 1e-7)
+    comparison_bins.append({
+        "q": base["q"],
+        "r": base["r"],
+        "cx": base["cx"],
+        "cy": base["cy"],
+        "clutch_count": c["count"] if c else 0,
+        "rest_count": r["count"] if r else 0,
+        "clutch_share": clean_float(clutch_share, 6),
+        "rest_share": clean_float(rest_share, 6),
+        "ratio": clean_float(ratio, 4),
+        "log_ratio": clean_float(math.log2(ratio), 4),
+        "clutch_fg": clean_float(c["fg"] if c else 0),
+        "rest_fg": clean_float(r["fg"] if r else 0),
+    })
+
+player_clutch = (
+    clutch.groupby(["PLAYER_NAME", "PLAYER_ID"], observed=True)
+    .agg(attempts=("SHOT_MADE", "count"), made=("SHOT_MADE", "sum"))
+    .reset_index()
+)
+player_clutch["fg"] = player_clutch["made"] / player_clutch["attempts"]
+player_clutch = player_clutch[
+    (player_clutch["made"] >= 1) &
+    (player_clutch["attempts"] >= 5)
+].sort_values(["made", "attempts"], ascending=False)
+
+player_records = []
+for _, row in player_clutch.iterrows():
+    player_records.append({
+        "player": row["PLAYER_NAME"],
+        "player_id": int(row["PLAYER_ID"]),
+        "attempts": int(row["attempts"]),
+        "made": int(row["made"]),
+        "fg": clean_float(row["fg"]),
+    })
+
+with open(f"{OUT_DIR}/clutch_comparison.json", "w") as f:
+    json.dump({
+        "bins": comparison_bins,
+        "players": player_records,
+        "overall": {
+            "clutch_shots": int(len(clutch)),
+            "clutch_fg": clean_float(clutch["SHOT_MADE"].mean()),
+            "rest_shots": int(len(rest)),
+            "rest_fg": clean_float(rest["SHOT_MADE"].mean()),
+        },
+    }, f, separators=(",", ":"))
+
+print(f"  {len(comparison_bins):,} heatmap bins and {len(player_records):,} qualified clutch players written")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7. TEAM + CHAMPION SHOT DNA
+# ─────────────────────────────────────────────────────────────────────────────
+print("Generating team_profiles.json and champion_profiles.json…")
+
+team_profiles = {"seasons": [int(s) for s in seasons], "teams_by_season": {}, "profiles": {}}
+league_profiles = {}
+
+for season in seasons:
+    season_int = int(season)
+    season_df = df[df["SEASON_1"] == season]
+    league_profiles[str(season_int)] = {
+        **basic_profile(season_df),
+        "zones": zone_profile(season_df),
+    }
+
+    teams = sorted(season_df["TEAM_NAME"].dropna().unique().tolist())
+    team_profiles["teams_by_season"][str(season_int)] = teams
+    team_profiles["profiles"][str(season_int)] = {}
+
+    for team in teams:
+        sub = season_df[season_df["TEAM_NAME"] == team]
+        team_profiles["profiles"][str(season_int)][team] = {
+            **basic_profile(sub),
+            "zones": zone_profile(sub),
+        }
+
+champion_profiles = {"champions": CHAMPIONS, "profiles": {}, "league": league_profiles}
+for season, champion in CHAMPIONS.items():
+    team_profile = team_profiles["profiles"].get(str(season), {}).get(champion)
+    if team_profile:
+        champion_profiles["profiles"][str(season)] = {
+            "team": champion,
+            **team_profile,
+        }
+
+with open(f"{OUT_DIR}/team_profiles.json", "w") as f:
+    json.dump(team_profiles, f, separators=(",", ":"))
+
+with open(f"{OUT_DIR}/champion_profiles.json", "w") as f:
+    json.dump(champion_profiles, f, separators=(",", ":"))
+
+print(f"  {sum(len(v) for v in team_profiles['teams_by_season'].values()):,} team-seasons written")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 8. PLAYER TEAM-CHANGE EVOLUTION
+# ─────────────────────────────────────────────────────────────────────────────
+print("Generating player_team_evolution.json…")
+
+player_evolution = {}
+for name, pid in EVOLUTION_PLAYERS.items():
+    sub = df[df["PLAYER_ID"] == pid].copy()
+    if sub.empty:
+        print(f"  WARNING: {name} not found for evolution")
+        continue
+
+    seasons_payload = []
+    for (season, team), g in sub.groupby(["SEASON_1", "TEAM_NAME"], observed=True):
+        if len(g) < 50:
+            continue
+        profile = basic_profile(g)
+        profile["season"] = int(season)
+        profile["team"] = team
+        profile["zones"] = zone_profile(g)
+        seasons_payload.append(profile)
+
+    stints = []
+    for team, g in sub.groupby("TEAM_NAME", observed=True):
+        if len(g) < 200:
+            continue
+        seasons_for_team = sorted([int(s) for s in g["SEASON_1"].unique().tolist()])
+        stint_profile = basic_profile(g)
+        stint_profile["team"] = team
+        stint_profile["start"] = min(seasons_for_team)
+        stint_profile["end"] = max(seasons_for_team)
+        stint_profile["zones"] = zone_profile(g)
+        stints.append(stint_profile)
+
+    player_evolution[name] = {
+        "player_id": int(pid),
+        "seasons": sorted(seasons_payload, key=lambda d: (d["season"], d["team"])),
+        "stints": sorted(stints, key=lambda d: (d["start"], d["team"])),
+    }
+    print(f"  {name}: {len(player_evolution[name]['stints'])} team stints")
+
+with open(f"{OUT_DIR}/player_team_evolution.json", "w") as f:
+    json.dump(player_evolution, f, separators=(",", ":"))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. CLUTCH TRAJECTORY SAMPLE
+# ─────────────────────────────────────────────────────────────────────────────
+print("Generating trajectory_samples.json…")
+
+trajectory = clutch.sample(n=min(260, len(clutch)), random_state=7).copy()
+trajectory = trajectory.sort_values(["SEASON_1", "SECS_LEFT"], ascending=[False, True])
+
+trajectory_players = sorted(trajectory["PLAYER_NAME"].unique().tolist())
+trajectory_teams = sorted(trajectory["TEAM_NAME"].unique().tolist())
+tp_idx = {v: i for i, v in enumerate(trajectory_players)}
+tt_idx = {v: i for i, v in enumerate(trajectory_teams)}
+
+trajectory_shots = []
+for _, row in trajectory.iterrows():
+    trajectory_shots.append([
+        round(float(row["LOC_X"]), 1),
+        round(float(row["LOC_Y"]), 1),
+        int(row["SHOT_MADE"]),
+        int(row["SEASON_1"]),
+        tp_idx[row["PLAYER_NAME"]],
+        tt_idx[row["TEAM_NAME"]],
+        int(row["SECS_LEFT"]),
+        1 if row["SHOT_TYPE"] == "3PT Field Goal" else 0,
+    ])
+
+with open(f"{OUT_DIR}/trajectory_samples.json", "w") as f:
+    json.dump({
+        "fields": ["x", "y", "made", "season", "player_idx", "team_idx", "secs", "is3"],
+        "players": trajectory_players,
+        "teams": trajectory_teams,
+        "shots": trajectory_shots,
+    }, f, separators=(",", ":"))
+
+print(f"  {len(trajectory_shots):,} trajectory samples written")
 
 print("\nAll JSON files generated successfully.")
 print(f"Output directory: {OUT_DIR}/")

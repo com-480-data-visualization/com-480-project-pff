@@ -1,116 +1,256 @@
 (async function initRevolution() {
-  const raw    = await d3.json('./data/hex_by_season.json');
-  const svg    = d3.select('#revolution-svg');
+  const raw = await d3.json('./data/hex_by_season.json');
+  const svg = d3.select('#revolution-svg');
+  const trendSvg = d3.select('#revolution-trend');
   const slider = document.getElementById('rev-slider');
-  const label  = document.getElementById('rev-year-label');
-  const playBtn= document.getElementById('rev-play');
-  const statEl = document.getElementById('rev-3pt-pct');
+  const label = document.getElementById('rev-year-label');
+  const playBtn = document.getElementById('rev-play');
+  const summaryEl = document.getElementById('rev-summary');
+  const metricsEl = document.getElementById('rev-metrics');
 
   const { W, H, toX, toY, drawCourt } = Court;
+  const GRID = 25;
+  const HEX_W = 50 / GRID;
+  const HEX_H = HEX_W * Math.sqrt(3) / 2;
+  const CELL_W = HEX_W * Court.SCALE;
+  const CELL_H = HEX_H * Court.SCALE;
 
-  // ── Cell dimensions (must match preprocess.py constants) ─────────────────
-  const GRID   = 25;
-  const HEX_W  = 50 / GRID;          // 2 ft
-  const HEX_H  = HEX_W * Math.sqrt(3) / 2; // ~1.732 ft
-  const CELL_W = HEX_W  * Court.SCALE;     // 20 px
-  const CELL_H = HEX_H  * Court.SCALE;     // ~17.3 px
-
-  // Clip path so cells don't paint outside the court boundary
   svg.append('defs').append('clipPath').attr('id', 'rev-clip')
     .append('rect').attr('x', 0).attr('y', 0).attr('width', W).attr('height', H);
 
-  // Cells group (below court lines)
   const cellsG = svg.append('g').attr('clip-path', 'url(#rev-clip)');
+  drawCourt(svg, { color: '#ffffff', opacity: 0.58, lw: 1.2 });
 
-  // Court overlay
-  drawCourt(svg, { color: '#ffffff', opacity: 0.55, lw: 1.2 });
-
-  // Color scale: diverging blue → white → red
-  // `rel` = ratio of shots in cell vs league average
-  const colorScale = d3.scaleDiverging()
-    .domain([0, 1, 3.5])
-    .interpolator(d3.interpolateRdBu)
+  const color = d3.scaleDiverging()
+    .domain([0, 1, 3.2])
+    .interpolator(t => d3.interpolateRdBu(1 - t))
     .clamp(true);
-  // Note: RdBu goes red→white→blue, we want blue=low, red=high
-  // Wrap to invert: low rel → blue, high rel → red
-  const color = rel => colorScale(4 - Math.min(rel, 3.5)); // invert domain
 
-  // ── Render a season ───────────────────────────────────────────────────────
+  function pct(v) { return `${(v * 100).toFixed(1)}%`; }
+
+  const seasons = raw.seasons.map(Number);
+  const trendSeries = [
+    { key: 'three_rate', label: '3PT rate', color: '#C9082A' },
+    { key: 'mid_rate', label: 'Mid-range', color: '#64748b' },
+    { key: 'rim_rate', label: 'At rim', color: '#22c55e' },
+  ];
+  const trendData = seasons.map(season => ({
+    season,
+    ...raw.metrics[String(season)],
+  }));
+  const trend = buildTrendChart();
+
+  function metricCard(label, value, delta) {
+    const sign = delta > 0 ? '+' : '';
+    return `
+      <div class="metric-card">
+        <span>${label}</span>
+        <strong>${value}</strong>
+        <em>${sign}${(delta * 100).toFixed(1)} pts vs 2004</em>
+      </div>`;
+  }
+
   function render(season) {
-    const bins = raw.data[season];
+    const bins = raw.data[season] || [];
+    const metrics = raw.metrics?.[season];
+    const base = raw.metrics?.['2004'];
 
-    const cells = cellsG.selectAll('rect.hex').data(bins, d => `${d.q}-${d.r}`);
-
-    cells.join(
+    cellsG.selectAll('rect.hex').data(bins, d => `${d.q}-${d.r}`).join(
       enter => enter.append('rect')
         .attr('class', 'hex')
         .attr('x', d => toX(d.cx) - CELL_W / 2)
         .attr('y', d => toY(d.cy) - CELL_H / 2)
-        .attr('width',  CELL_W)
+        .attr('width', CELL_W)
         .attr('height', CELL_H)
         .attr('fill', d => d.count < 3 ? 'transparent' : color(d.rel))
         .attr('opacity', 0)
-        .call(e => e.transition().duration(400).attr('opacity', d => d.count < 3 ? 0 : 0.82)),
-      update => update
-        .call(u => u.transition().duration(500)
-          .attr('fill', d => d.count < 3 ? 'transparent' : color(d.rel))
-          .attr('opacity', d => d.count < 3 ? 0 : 0.82)
-        ),
-      exit => exit.transition().duration(300).attr('opacity', 0).remove()
+        .call(e => e.transition().duration(420).attr('opacity', d => d.count < 3 ? 0 : 0.84)),
+      update => update.call(u => u.transition().duration(520)
+        .attr('fill', d => d.count < 3 ? 'transparent' : color(d.rel))
+        .attr('opacity', d => d.count < 3 ? 0 : 0.84)),
+      exit => exit.transition().duration(250).attr('opacity', 0).remove()
     );
 
-    // Update 3PT stat callout
-    const allBins   = bins.filter(d => d.count >= 3);
-    const total     = d3.sum(allBins, d => d.count);
-    // We don't have direct 3PT flag per cell, but cx > 247.5 or < 252.5 at far distance
-    // Instead pull from season-level data stored in hex_by_season (not added) —
-    // use an approximate heuristic: cells with cy_data > 24ft are almost all 3PT
-    // For exact value we'd need a separate field, so show FG% instead
-    const avgFg     = total > 0 ? d3.sum(allBins, d => d.count * d.fg) / total : 0;
-    statEl.textContent = `Avg FG: ${(avgFg * 100).toFixed(1)}%`;
+    if (metrics && base) {
+      summaryEl.innerHTML = `In <strong>${season}</strong>, the league took <strong>${metrics.shots.toLocaleString()}</strong> shots. The shot map shows where that season over- or under-indexed compared with the 22-year average.`;
+      metricsEl.innerHTML = [
+        metricCard('3PT rate', pct(metrics.three_rate), metrics.three_rate - base.three_rate),
+        metricCard('Mid-range rate', pct(metrics.mid_rate), metrics.mid_rate - base.mid_rate),
+        metricCard('At-rim rate', pct(metrics.rim_rate), metrics.rim_rate - base.rim_rate),
+        metricCard('FG%', pct(metrics.fg), metrics.fg - base.fg),
+      ].join('');
+    }
+
+    trend.render(+season);
   }
 
-  // ── Controls ──────────────────────────────────────────────────────────────
-  function setYear(yr) {
-    slider.value = yr;
-    label.textContent = yr;
-    render(yr);
+  function buildTrendChart() {
+    const margin = { top: 28, right: 105, bottom: 30, left: 42 };
+    const width = 520;
+    const height = 160;
+    const innerW = width - margin.left - margin.right;
+    const innerH = height - margin.top - margin.bottom;
+
+    trendSvg.selectAll('*').remove();
+
+    const g = trendSvg.append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleLinear()
+      .domain(d3.extent(seasons))
+      .range([0, innerW]);
+
+    const y = d3.scaleLinear()
+      .domain([
+        0,
+        d3.max(trendData, d => d3.max(trendSeries, s => d[s.key])) + 0.035,
+      ])
+      .nice()
+      .range([innerH, 0]);
+
+    g.append('g')
+      .attr('class', 'trend-x-axis')
+      .attr('transform', `translate(0,${innerH})`)
+      .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format('d')))
+      .call(axis => axis.selectAll('text').attr('fill', '#7070a0').attr('font-size', 10))
+      .call(axis => axis.selectAll('path,line').attr('stroke', '#1e1e35'));
+
+    g.append('g')
+      .attr('class', 'trend-y-axis')
+      .call(d3.axisLeft(y).ticks(4).tickFormat(d => `${Math.round(d * 100)}%`))
+      .call(axis => axis.selectAll('text').attr('fill', '#7070a0').attr('font-size', 10))
+      .call(axis => axis.selectAll('path,line').attr('stroke', '#1e1e35'));
+
+    g.append('text')
+      .attr('x', 0)
+      .attr('y', -10)
+      .attr('fill', '#7070a0')
+      .attr('font-size', 11)
+      .text('League metrics revealed year by year');
+
+    const line = d3.line()
+      .x(d => x(d.season))
+      .y(d => y(d.value))
+      .curve(d3.curveMonotoneX);
+
+    const linesG = g.append('g').attr('class', 'trend-lines');
+    const pointsG = g.append('g').attr('class', 'trend-points');
+    const marker = g.append('line')
+      .attr('y1', 0)
+      .attr('y2', innerH)
+      .attr('stroke', '#ffffff')
+      .attr('stroke-opacity', 0.18)
+      .attr('stroke-dasharray', '3 4');
+
+    const legend = trendSvg.append('g')
+      .attr('transform', `translate(${width - margin.right + 14},${margin.top})`);
+    trendSeries.forEach((s, i) => {
+      const row = legend.append('g').attr('transform', `translate(0,${i * 21})`);
+      row.append('circle').attr('r', 4).attr('cx', 0).attr('cy', 0).attr('fill', s.color);
+      row.append('text')
+        .attr('x', 10)
+        .attr('y', 3)
+        .attr('fill', '#7070a0')
+        .attr('font-size', 10)
+        .text(s.label);
+    });
+
+    function valuesUntil(year, series) {
+      return trendData
+        .filter(d => d.season <= year)
+        .map(d => ({ season: d.season, value: d[series.key] }));
+    }
+
+    return {
+      render(year) {
+        marker.transition().duration(250).attr('x1', x(year)).attr('x2', x(year));
+
+        const lineData = trendSeries.map(series => ({
+          ...series,
+          values: valuesUntil(year, series),
+        }));
+
+        linesG.selectAll('path.trend-line').data(lineData, d => d.key).join(
+          enter => enter.append('path')
+            .attr('class', 'trend-line')
+            .attr('fill', 'none')
+            .attr('stroke', d => d.color)
+            .attr('stroke-width', 2.4)
+            .attr('stroke-linecap', 'round')
+            .attr('stroke-linejoin', 'round')
+            .attr('d', d => line(d.values)),
+          update => update.transition().duration(420).attr('d', d => line(d.values))
+        );
+
+        pointsG.selectAll('g.trend-point-series').data(lineData, d => d.key).join(
+          enter => enter.append('g').attr('class', 'trend-point-series'),
+          update => update,
+          exit => exit.remove()
+        )
+          .attr('fill', d => d.color)
+          .each(function(series) {
+            d3.select(this).selectAll('circle').data(series.values, d => d.season).join(
+              enter => enter.append('circle')
+                .attr('cx', d => x(d.season))
+                .attr('cy', d => y(d.value))
+                .attr('r', 0)
+                .attr('stroke', '#090910')
+                .attr('stroke-width', 1.5)
+                .call(e => e.transition().duration(260).attr('r', 3.4)),
+              update => update.transition().duration(260)
+                .attr('cx', d => x(d.season))
+                .attr('cy', d => y(d.value)),
+              exit => exit.remove()
+            );
+          });
+      },
+    };
   }
 
-  setYear(2004);
+  function setYear(year) {
+    slider.value = year;
+    label.textContent = year;
+    render(String(year));
+  }
 
+  slider.min = d3.min(seasons);
+  slider.max = d3.max(seasons);
+  setYear(seasons[0]);
   slider.addEventListener('input', () => setYear(+slider.value));
 
-  let playing = false, timer = null;
+  let playing = false;
+  let timer = null;
+
+  function stopPlayback() {
+    playing = false;
+    clearInterval(timer);
+    timer = null;
+    playBtn.textContent = 'Replay';
+    playBtn.classList.remove('playing');
+  }
+
   playBtn.addEventListener('click', () => {
+    if (!playing && +slider.value === seasons[seasons.length - 1]) {
+      setYear(seasons[0]);
+    }
+
     playing = !playing;
-    playBtn.textContent  = playing ? '⏸ Pause' : '▶ Play';
+    playBtn.textContent = playing ? 'Pause' : 'Play';
     playBtn.classList.toggle('playing', playing);
+
     if (playing) {
-      let yr = +slider.value;
+      let idx = seasons.indexOf(+slider.value);
       timer = setInterval(() => {
-        yr++;
-        if (yr > 2025) { yr = 2004; }
-        setYear(yr);
-      }, 900);
+        if (idx >= seasons.length - 1) {
+          stopPlayback();
+          return;
+        }
+        idx += 1;
+        setYear(seasons[idx]);
+      }, 850);
     } else {
       clearInterval(timer);
+      timer = null;
     }
   });
-
-  // Update stat to show 3PT rate for the selected year using pre-loaded hex data
-  // (We add this as a direct 3PT rate display)
-  const THREE_PT_RATES = {
-    2004:.222,2005:.223,2006:.223,2007:.224,2008:.228,2009:.229,2010:.228,
-    2011:.228,2012:.237,2013:.244,2014:.252,2015:.270,2016:.281,2017:.295,
-    2018:.315,2019:.336,2020:.349,2021:.391,2022:.399,2023:.407,2024:.415,2025:.420,
-  };
-  slider.addEventListener('input', () => {
-    const yr  = +slider.value;
-    const pct = THREE_PT_RATES[yr];
-    if (pct) statEl.textContent = `${(pct * 100).toFixed(1)}% of shots were 3-pointers`;
-  });
-  // initialise
-  statEl.textContent = `${(THREE_PT_RATES[2004]*100).toFixed(1)}% of shots were 3-pointers`;
-
 })();

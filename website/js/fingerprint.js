@@ -1,6 +1,7 @@
 (async function initFingerprint() {
   const data  = await d3.json('./data/players_fingerprint.json');
   const svg   = d3.select('#fingerprint-svg');
+  const trendSvg = d3.select('#fingerprint-trend');
   const statsEl = document.getElementById('player-stats');
 
   const CX = 210, CY = 210, R_OUTER = 165, R_INNER = 65;
@@ -23,10 +24,10 @@
   const SLICE = (Math.PI * 2) / N;
   const START = -Math.PI / 2; // top of circle
 
-  // FG% colour scale: blue → orange
+  // FG% colour scale: blue → red
   const fgColor = d3.scaleLinear()
     .domain([0.28, 0.65])
-    .range(['#2166ac', '#f7820b'])
+    .range(['#2166ac', '#C9082A'])
     .clamp(true);
 
   // ── Defs: clip for player photo ───────────────────────────────────────────
@@ -168,6 +169,58 @@
         <span class="stat-val">${bestZone ? bestZone.zone.replace('(Non-RA)','') + ' ' + (bestZone.fg*100).toFixed(1)+'%' : '—'}</span>
       </div>
     `;
+
+    renderTrend(p.seasons_3pt || []);
+  }
+
+  function renderTrend(points) {
+    trendSvg.selectAll('*').remove();
+    if (!points.length) return;
+
+    const margin = { top: 12, right: 18, bottom: 22, left: 34 };
+    const width = 320 - margin.left - margin.right;
+    const height = 90 - margin.top - margin.bottom;
+    const g = trendSvg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const x = d3.scaleLinear()
+      .domain(d3.extent(points, d => +d.season))
+      .range([0, width]);
+    const y = d3.scaleLinear()
+      .domain([0, Math.max(0.55, d3.max(points, d => +d.three_rate) + 0.05)])
+      .range([height, 0]);
+
+    g.append('path')
+      .datum(points)
+      .attr('fill', 'none')
+      .attr('stroke', '#C9082A')
+      .attr('stroke-width', 2)
+      .attr('d', d3.line()
+        .x(d => x(+d.season))
+        .y(d => y(+d.three_rate))
+        .curve(d3.curveMonotoneX));
+
+    g.selectAll('circle').data(points).join('circle')
+      .attr('cx', d => x(+d.season))
+      .attr('cy', d => y(+d.three_rate))
+      .attr('r', 2.5)
+      .attr('fill', '#C9082A');
+
+    g.append('g')
+      .attr('transform', `translate(0,${height})`)
+      .call(d3.axisBottom(x).ticks(4).tickFormat(d3.format('d')))
+      .call(g => g.selectAll('text').attr('fill', '#7070a0'))
+      .call(g => g.selectAll('path,line').attr('stroke', '#1e1e35'));
+
+    g.append('g')
+      .call(d3.axisLeft(y).ticks(3).tickFormat(d => `${Math.round(d * 100)}%`))
+      .call(g => g.selectAll('text').attr('fill', '#7070a0'))
+      .call(g => g.selectAll('path,line').attr('stroke', '#1e1e35'));
+
+    trendSvg.append('text')
+      .attr('x', 8)
+      .attr('y', 10)
+      .attr('fill', '#7070a0')
+      .attr('font-size', 10)
+      .text('3PT attempt rate over seasons');
   }
 
   // ── Arc path helper ───────────────────────────────────────────────────────
@@ -187,9 +240,9 @@
   }
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
-  document.querySelectorAll('.player-tab').forEach(btn => {
+  document.querySelectorAll('#player-tabs .player-tab').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.player-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#player-tabs .player-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       render(btn.dataset.player);
     });

@@ -27,11 +27,11 @@ const Court = (() => {
    * Draw NBA half-court lines into `sel` (a D3 selection of an <svg> or <g>).
    * @param {d3.Selection} sel
    * @param {object} opts
-   *   color    – stroke colour     (default '#f7820b')
+   *   color    – stroke colour     (default '#C9082A')
    *   opacity  – stroke opacity    (default 0.5)
    *   lw       – stroke width      (default 1.5)
    */
-  function drawCourt(sel, { color = '#f7820b', opacity = 0.5, lw = 1.5 } = {}) {
+  function drawCourt(sel, { color = '#C9082A', opacity = 0.5, lw = 1.5 } = {}) {
     const g = sel.append('g')
       .attr('class', 'court-lines')
       .attr('fill', 'none')

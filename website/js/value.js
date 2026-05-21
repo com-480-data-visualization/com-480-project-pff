@@ -55,12 +55,9 @@
 
   function renderLegend(mode) {
     const s  = scales[mode];
-    const id = `val-grad-${mode}`;
-    // Build gradient in SVG defs (or just use a CSS gradient bar)
     const stops = d3.range(0, 1.01, 0.1);
-    const gradColors = stops.map(t => s.color.copy().domain(
-      s.color.domain().map((v,i) => i===0 ? s.color.domain()[0] : s.color.domain()[1])
-    )(s.color.domain()[0] + t * (s.color.domain()[1] - s.color.domain()[0])));
+    const [d0, d1] = s.color.domain();
+    const gradColors = stops.map(t => s.color(d0 + (1 - t) * (d1 - d0)));
 
     legendEl.innerHTML = `
       <div style="background:linear-gradient(to right,${stops.map((t,i)=>gradColors[i]).join(',')});
