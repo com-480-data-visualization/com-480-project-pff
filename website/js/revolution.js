@@ -213,44 +213,56 @@
     render(String(year));
   }
 
-  slider.min = d3.min(seasons);
-  slider.max = d3.max(seasons);
-  setYear(seasons[0]);
-  slider.addEventListener('input', () => setYear(+slider.value));
-
   let playing = false;
   let timer = null;
+  const lastSeason = seasons[seasons.length - 1];
+
+  function syncPlayButton() {
+    playBtn.classList.remove('playing');
+    const atEnd = +slider.value === lastSeason;
+    playBtn.textContent = atEnd ? 'Replay' : '▶ Play';
+    playBtn.classList.toggle('rev-play-cta', !atEnd);
+  }
 
   function stopPlayback() {
     playing = false;
     clearInterval(timer);
     timer = null;
-    playBtn.textContent = 'Replay';
-    playBtn.classList.remove('playing');
+    syncPlayButton();
   }
 
+  function startPlayback() {
+    if (playing) return;
+    if (+slider.value === lastSeason) setYear(seasons[0]);
+
+    playing = true;
+    playBtn.textContent = 'Pause';
+    playBtn.classList.add('playing');
+    playBtn.classList.remove('rev-play-cta');
+
+    let idx = seasons.indexOf(+slider.value);
+    timer = setInterval(() => {
+      if (idx >= seasons.length - 1) {
+        stopPlayback();
+        return;
+      }
+      idx += 1;
+      setYear(seasons[idx]);
+    }, 850);
+  }
+
+  slider.min = d3.min(seasons);
+  slider.max = d3.max(seasons);
+  setYear(seasons[0]);
+  syncPlayButton();
+
+  slider.addEventListener('input', () => {
+    setYear(+slider.value);
+    if (!playing) syncPlayButton();
+  });
+
   playBtn.addEventListener('click', () => {
-    if (!playing && +slider.value === seasons[seasons.length - 1]) {
-      setYear(seasons[0]);
-    }
-
-    playing = !playing;
-    playBtn.textContent = playing ? 'Pause' : 'Play';
-    playBtn.classList.toggle('playing', playing);
-
-    if (playing) {
-      let idx = seasons.indexOf(+slider.value);
-      timer = setInterval(() => {
-        if (idx >= seasons.length - 1) {
-          stopPlayback();
-          return;
-        }
-        idx += 1;
-        setYear(seasons[idx]);
-      }, 850);
-    } else {
-      clearInterval(timer);
-      timer = null;
-    }
+    if (playing) stopPlayback();
+    else startPlayback();
   });
 })();

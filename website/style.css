@@ -330,6 +330,39 @@ input[type=range]::-moz-range-thumb {
 }
 .btn-play:hover { background: var(--border); }
 .btn-play.playing { border-color: var(--accent); color: var(--accent); }
+#revolution .btn-play.rev-play-cta {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(201, 8, 42, 0.55);
+  animation: rev-play-beat 1.35s ease-in-out infinite;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+#revolution .btn-play.rev-play-cta:hover {
+  background: #e4475f;
+  border-color: #e4475f;
+  box-shadow: 0 0 22px rgba(201, 8, 42, 0.8);
+}
+#revolution .btn-play.playing {
+  background: var(--surface);
+  animation: none;
+  box-shadow: none;
+}
+@keyframes rev-play-beat {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 12px rgba(201, 8, 42, 0.5);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 24px rgba(201, 8, 42, 0.85);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #revolution .btn-play.rev-play-cta {
+    animation: none;
+  }
+}
 .btn-pill {
   background: transparent;
   border: 1px solid var(--border);
@@ -365,6 +398,60 @@ input[type=range]::-moz-range-thumb {
   max-width: 520px;
   display: flex;
   justify-content: center;
+}
+.fingerprint-wrap .fp-hit {
+  cursor: pointer;
+  fill: transparent;
+  stroke: none;
+}
+#fingerprint-tooltip {
+  max-width: 220px;
+  padding: .55rem .65rem;
+}
+.fp-tip-inner {
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+  align-items: stretch;
+}
+.fp-tip-court {
+  display: flex;
+  justify-content: center;
+}
+.fp-mini-court-svg {
+  width: 72px;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.fp-zone-highlight {
+  fill: rgba(201, 8, 42, 0.42);
+  stroke: #C9082A;
+  stroke-width: 2;
+  pointer-events: none;
+}
+.fp-tip-stats {
+  font-size: .76rem;
+  line-height: 1.4;
+}
+.fp-tip-stats strong {
+  display: block;
+  color: var(--text);
+  font-size: .82rem;
+  margin-bottom: .25rem;
+}
+.fp-tip-line span {
+  font-weight: 600;
+  color: var(--text);
+}
+.fp-tip-insight {
+  margin: .35rem 0 0;
+  padding-top: .35rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .7rem;
+  line-height: 1.35;
 }
 .map-legend {
   position: absolute;
@@ -523,6 +610,18 @@ input[type=range]::-moz-range-thumb {
   transition: border-color .2s;
 }
 .filter-select:focus { border-color: var(--accent); }
+#team-dna .filter-group {
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+#team-dna .filter-select {
+  flex: 1 1 0;
+  min-width: 0;
+}
+#team-dna #team-champion {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 .clutch-stats {
   display: flex;
   flex-direction: column;
@@ -554,8 +653,38 @@ input[type=range]::-moz-range-thumb {
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+/* Pressure Test — slightly smaller viz so section fits one screen */
+#clutch {
+  padding-top: 5rem;
+  padding-bottom: 2rem;
+}
+#clutch .section-viz {
+  gap: 0.65rem;
+}
+#clutch .section-viz svg {
+  max-width: 480px;
+}
+#clutch .map-wrap {
+  max-width: 480px;
+}
+#clutch .clutcher-scatter {
+  max-width: 480px;
+  height: 240px;
+  margin-top: 0.85rem;
+}
+#clutch .clutch-map-legend {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.95em;
+}
+#clutch .clutch-stats {
+  min-height: 0;
+  gap: 0.35rem;
+}
 .clutch-map-legend {
   right: -8.5rem;
+}
+#clutch .clutch-map-legend {
+  right: -7.25rem;
 }
 .fingerprint-map-legend {
   top: 1.25rem;

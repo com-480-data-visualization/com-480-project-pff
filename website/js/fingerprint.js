@@ -3,6 +3,154 @@
   const svg   = d3.select('#fingerprint-svg');
   const trendSvg = d3.select('#fingerprint-trend');
   const statsEl = document.getElementById('player-stats');
+  const tipEl = document.getElementById('fingerprint-tooltip');
+  const wrapEl = document.querySelector('.fingerprint-wrap');
+
+  const C = Court;
+  const CORNER_Y_DATA = 5.25 + Math.sqrt(23.75 ** 2 - 22 ** 2);
+  const CORNER_SVG_Y = C.toY(CORNER_Y_DATA);
+  const CORNER_XL = C.toX(-22);
+  const CORNER_XR = C.toX(22);
+  const FT_Y = C.toY(19);
+  const R3_PX = 23.75 * C.SCALE;
+  const RESTRICTED_R = 40;
+  const restrictedCircle = `M ${C.BX},${C.BY} m -${RESTRICTED_R},0 a ${RESTRICTED_R},${RESTRICTED_R} 0 1,0 ${RESTRICTED_R * 2},0 a ${RESTRICTED_R},${RESTRICTED_R} 0 1,0 -${RESTRICTED_R * 2},0`;
+  const paintRect = `M ${C.toX(-8)},${C.H} L ${C.toX(8)},${C.H} L ${C.toX(8)},${FT_Y} L ${C.toX(-8)},${FT_Y} Z`;
+  const insideThreeArc = `M ${CORNER_XL},${CORNER_SVG_Y} A ${R3_PX},${R3_PX} 0 0,1 ${CORNER_XR},${CORNER_SVG_Y} L ${C.W},${C.H} L 0,${C.H} Z`;
+  const leftCorner = `M 0,${C.H} L ${CORNER_XL},${C.H} L ${CORNER_XL},${CORNER_SVG_Y} L 0,${CORNER_SVG_Y} Z`;
+  const rightCorner = `M ${CORNER_XR},${C.H} L ${C.W},${C.H} L ${C.W},${CORNER_SVG_Y} L ${CORNER_XR},${CORNER_SVG_Y} Z`;
+  // Arc + wing strips along sidelines up to half-court (fills elbows beside corner 3)
+  const aboveBreak = `M 0,${CORNER_SVG_Y} L ${CORNER_XL},${CORNER_SVG_Y} A ${R3_PX},${R3_PX} 0 0,1 ${CORNER_XR},${CORNER_SVG_Y} L ${C.W},${CORNER_SVG_Y} L ${C.W},0 L 0,0 Z`;
+
+  const ZONE_COURT_PATHS = {
+    'Restricted Area': restrictedCircle,
+    'In The Paint (Non-RA)': paintRect,
+    'Left Corner 3': leftCorner,
+    'Right Corner 3': rightCorner,
+    'Above the Break 3': aboveBreak,
+  };
+
+  const ZONE_MASKS = {
+    'In The Paint (Non-RA)': {
+      shape: paintRect,
+      holes: [restrictedCircle],
+    },
+    'Mid-Range': {
+      shape: insideThreeArc,
+      holes: [paintRect, restrictedCircle, leftCorner, rightCorner],
+    },
+    'Above the Break 3': {
+      shape: aboveBreak,
+      holes: [leftCorner, rightCorner],
+    },
+  };
+
+  const miniCourtSvg = d3.select(document.createElementNS('http://www.w3.org/2000/svg', 'svg'))
+    .attr('viewBox', `0 0 ${C.W} ${C.H}`);
+  Court.drawCourt(miniCourtSvg, { color: '#505070', opacity: 0.7, lw: 1 });
+  const MINI_COURT_LINES = miniCourtSvg.select('.court-lines').node().outerHTML;
+
+  function pct(v) { return `${(v * 100).toFixed(1)}%`; }
+
+  function zoneInsight(d, overallFg) {
+    if (!d.n) return 'No shots recorded in this zone.';
+    const expectedShare = 1 / 6;
+    const shareDiff = d.freq - expectedShare;
+    const fgDiff = d.fg - overallFg;
+
+    let vol;
+    if (Math.abs(shareDiff) < 0.012) vol = 'Takes a typical share of their attempts here';
+    else if (shareDiff > 0) vol = 'Takes more shots here than usual';
+    else vol = 'Takes fewer shots here than usual';
+
+    let fg;
+    if (Math.abs(fgDiff) < 0.008) fg = 'shoots near their overall FG%';
+    else if (fgDiff > 0) fg = `shoots ${(fgDiff * 100).toFixed(1)} pp better than their average`;
+    else fg = `shoots ${(Math.abs(fgDiff) * 100).toFixed(1)} pp worse than their average`;
+
+    return `${vol} and ${fg}.`;
+  }
+
+  function miniCourtHtml(zone) {
+    const maskSpec = ZONE_MASKS[zone];
+    let highlight;
+    if (maskSpec) {
+      const maskId = `fp-mask-${zone.replace(/[^a-z0-9]/gi, '')}`;
+      const holes = maskSpec.holes.map(h => `<path fill="black" d="${h}"/>`).join('');
+      highlight = `
+        <defs>
+          <mask id="${maskId}">
+            <path fill="white" d="${maskSpec.shape}"/>
+            ${holes}
+          </mask>
+        </defs>
+        <path class="fp-zone-highlight" mask="url(#${maskId})" d="${maskSpec.shape}"/>`;
+    } else {
+      const d = ZONE_COURT_PATHS[zone] || '';
+      highlight = `<path class="fp-zone-highlight" d="${d}"/>`;
+    }
+    return `<svg viewBox="0 0 ${C.W} ${C.H}" class="fp-mini-court-svg" aria-hidden="true">
+      <rect width="${C.W}" height="${C.H}" fill="#0a0f1e"/>
+      ${MINI_COURT_LINES}
+      ${highlight}
+    </svg>`;
+  }
+
+  function showTip(event, html) {
+    const rect = wrapEl.getBoundingClientRect();
+    tipEl.innerHTML = html;
+    tipEl.classList.add('visible');
+    const tipRect = tipEl.getBoundingClientRect();
+    let left = event.clientX - rect.left + 14;
+    let top = event.clientY - rect.top - 8;
+    left = Math.min(left, rect.width - tipRect.width - 8);
+    top = Math.min(top, rect.height - tipRect.height - 8);
+    left = Math.max(8, left);
+    top = Math.max(8, top);
+    tipEl.style.left = `${left}px`;
+    tipEl.style.top = `${top}px`;
+  }
+
+  function hideTip() {
+    tipEl.classList.remove('visible');
+  }
+
+  function setBarHighlight(zone) {
+    barsG.selectAll('path.fp-bar')
+      .attr('opacity', d => (d.zone === zone ? 1 : 0.28))
+      .attr('stroke', d => (d.zone === zone ? '#e8e8f0' : 'none'))
+      .attr('stroke-width', d => (d.zone === zone ? 1.25 : 0));
+  }
+
+  function clearBarHighlight() {
+    barsG.selectAll('path.fp-bar')
+      .attr('opacity', 0.85)
+      .attr('stroke', 'none');
+  }
+
+  function zoneTipHtml(d, overallFg) {
+    return `
+      <div class="fp-tip-inner">
+        <div class="fp-tip-court">${miniCourtHtml(d.zone)}</div>
+        <div class="fp-tip-stats">
+          <strong>${d.zone}</strong>
+          <div class="fp-tip-line">Share of attempts: <span>${pct(d.freq)}</span></div>
+          <div class="fp-tip-line">FG%: <span>${pct(d.fg)}</span></div>
+          <p class="fp-tip-insight">${zoneInsight(d, overallFg)}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function bindZoneHover(sel, overallFg) {
+    sel
+      .on('mouseenter', (event, d) => setBarHighlight(d.zone))
+      .on('mousemove', (event, d) => showTip(event, zoneTipHtml(d, overallFg)))
+      .on('mouseleave', () => {
+        clearBarHighlight();
+        hideTip();
+      });
+  }
 
   const CX = 210, CY = 210, R_OUTER = 165, R_INNER = 65;
   const PHOTO_R = 55;
@@ -106,8 +254,12 @@
     .attr('font-size', '9px')
     .attr('font-family', 'Inter, sans-serif');
 
+  const hitG = svg.append('g').attr('class', 'fp-hits');
+
   // ── Render player ─────────────────────────────────────────────────────────
   function render(playerName) {
+    hideTip();
+    clearBarHighlight();
     const p    = data[playerName];
     if (!p) return;
 
@@ -116,17 +268,27 @@
     const maxFreq = Math.max(...ZONES.map(z => zoneMap[z]?.freq ?? 0));
 
     const arcs = ZONES.map((zoneName, i) => {
-      const z    = zoneMap[zoneName] || { freq: 0, fg: 0 };
+      const z    = zoneMap[zoneName] || { freq: 0, fg: 0, n: 0 };
       const a0   = START + i * SLICE + 0.04;
       const a1   = START + (i + 1) * SLICE - 0.04;
+      const hitA0 = START + i * SLICE + 0.02;
+      const hitA1 = START + (i + 1) * SLICE - 0.02;
       const rBar = R_INNER + (z.freq / Math.max(maxFreq, 0.01)) * (R_OUTER - R_INNER);
-      return { a0, a1, r: rBar, fg: z.fg, freq: z.freq, n: z.n, zone: zoneName };
+      return {
+        a0, a1, hitA0, hitA1,
+        r: rBar,
+        fg: z.fg,
+        freq: z.freq,
+        n: z.n,
+        zone: zoneName,
+      };
     });
 
     // Update bars
-    barsG.selectAll('path.fp-bar').data(arcs)
+    barsG.selectAll('path.fp-bar').data(arcs, d => d.zone)
       .join(
         enter => enter.append('path').attr('class', 'fp-bar')
+          .attr('pointer-events', 'none')
           .attr('d', d => arcPath(CX, CY, R_INNER, R_INNER, d.a0, d.a1))
           .attr('fill', d => fgColor(d.fg))
           .attr('opacity', 0.85)
@@ -135,8 +297,20 @@
         update => update
           .call(u => u.transition().duration(500)
             .attr('d', d => arcPath(CX, CY, R_INNER, d.r, d.a0, d.a1))
-            .attr('fill', d => fgColor(d.fg)))
+            .attr('fill', d => fgColor(d.fg))),
       );
+
+    hitG.selectAll('path.fp-hit').data(arcs, d => d.zone)
+      .join(
+        enter => enter.append('path')
+          .attr('class', 'fp-hit')
+          .attr('d', d => arcPath(CX, CY, R_INNER, R_OUTER, d.hitA0, d.hitA1))
+          .call(bindZoneHover, p.overall_fg),
+        update => update
+          .attr('d', d => arcPath(CX, CY, R_INNER, R_OUTER, d.hitA0, d.hitA1))
+          .call(bindZoneHover, p.overall_fg),
+      );
+    hitG.raise();
 
     // Photo
     const pid = p.player_id;
