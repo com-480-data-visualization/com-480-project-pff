@@ -91,18 +91,35 @@
   }
 
   function renderStats(playerName = '') {
-    const filtered = playerName ? shots.filter(d => d.player === playerName) : shots;
-    const total = filtered.length;
-    const made = filtered.filter(d => d.made).length;
-    const fgPct = total ? made / total : 0;
-    const avg = comparison.overall.rest_fg;
-    const top = qualifiedPlayers.slice(0, 1)[0];
+    const top = qualifiedPlayers[0];
+    let total;
+    let made;
+    let fgPct;
+    const restFg = comparison.overall.rest_fg;
+
+    if (!playerName) {
+      total = comparison.overall.clutch_shots;
+      fgPct = comparison.overall.clutch_fg;
+      made = Math.round(total * fgPct);
+    } else {
+      const playerRec = comparison.players.find(p => p.player === playerName);
+      if (playerRec) {
+        total = playerRec.attempts;
+        made = playerRec.made;
+        fgPct = playerRec.fg;
+      } else {
+        const filtered = shots.filter(d => d.player === playerName);
+        total = filtered.length;
+        made = filtered.filter(d => d.made).length;
+        fgPct = total ? made / total : 0;
+      }
+    }
 
     statsEl.innerHTML = `
       <div class="clutch-stat-row"><span>Clutch attempts</span><span class="val">${total.toLocaleString()}</span></div>
       <div class="clutch-stat-row"><span>Clutch makes</span><span class="val">${made.toLocaleString()}</span></div>
       <div class="clutch-stat-row"><span>Clutch FG%</span><span class="val">${pct(fgPct)}</span></div>
-      <div class="clutch-stat-row"><span>Rest-of-game FG%</span><span class="val">${pct(avg)}</span></div>
+      <div class="clutch-stat-row"><span>Rest-of-game FG%</span><span class="val">${pct(restFg)}</span></div>
       ${!playerName && top ? `<div class="clutch-stat-row"><span>Most clutch makes</span><span class="val">${top.player.split(' ').pop()} (${top.made})</span></div>` : ''}
     `;
   }
@@ -162,20 +179,47 @@
       .attr('font-size', 11)
       .text('Qualified players: ≥1 made clutch shot and ≥5 attempts');
 
-    const avgY = y(comparison.overall.clutch_fg);
-    g.append('line')
-      .attr('x1', 0).attr('x2', innerW)
-      .attr('y1', avgY).attr('y2', avgY)
-      .attr('stroke', '#C9082A')
-      .attr('stroke-opacity', 0.45)
-      .attr('stroke-dasharray', '4 4');
-    g.append('text')
-      .attr('x', innerW - 4)
-      .attr('y', avgY - 6)
-      .attr('text-anchor', 'end')
-      .attr('fill', '#C9082A')
-      .attr('font-size', 10)
-      .text(`avg ${pct(comparison.overall.clutch_fg)}`);
+    const clutchAvg = comparison.overall.clutch_fg;
+    const restAvg = comparison.overall.rest_fg;
+
+    function drawFgReference(fg, color) {
+      const yPos = y(fg);
+      g.append('line')
+        .attr('x1', 0)
+        .attr('x2', innerW)
+        .attr('y1', yPos)
+        .attr('y2', yPos)
+        .attr('stroke', color)
+        .attr('stroke-width', 1.5)
+        .attr('stroke-opacity', 0.75)
+        .attr('stroke-dasharray', '5 4');
+      return yPos;
+    }
+
+    drawFgReference(restAvg, '#17408B');
+    drawFgReference(clutchAvg, '#C9082A');
+
+    const legend = g.append('g').attr('transform', `translate(${innerW - 118}, 2)`);
+    [
+      { label: 'Clutch avg', value: clutchAvg, color: '#C9082A' },
+      { label: 'Rest-of-game avg', value: restAvg, color: '#17408B' },
+    ].forEach((item, i) => {
+      const row = legend.append('g').attr('transform', `translate(0,${i * 17})`);
+      row.append('line')
+        .attr('x1', 0)
+        .attr('x2', 16)
+        .attr('y1', 0)
+        .attr('y2', 0)
+        .attr('stroke', item.color)
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '4 3');
+      row.append('text')
+        .attr('x', 20)
+        .attr('y', 4)
+        .attr('fill', item.color)
+        .attr('font-size', 10)
+        .text(`${item.label} ${pct(item.value)}`);
+    });
 
     const orderedPlayers = qualifiedPlayers
       .slice()
