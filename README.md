@@ -8,35 +8,26 @@ Interactive data-visualization project for **COM-480 (EPFL)** exploring how NBA 
 
 ## Quick start — run the website
 
-The site is a **static** front end (`website/`). It loads JSON from `website/data/` and must be served over HTTP (opening `index.html` directly will block `fetch` / `d3.json`).
-
-1. Clone the repository and go to the project root:
+The site is a **static** front end in `website/`. It loads JSON via `fetch` / `d3.json`, so serve it over HTTP (a `file://` URL will not work).
 
 ```bash
 git clone https://github.com/com-480-data-visualization/com-480-project-pff.git
-cd com-480-project-pff
-```
-
-2. Start a local server from the `website` folder:
-
-```bash
-cd website
+cd com-480-project-pff/website
 python3 -m http.server 8000
 ```
 
-3. Open [http://localhost:8000](http://localhost:8000) in a browser.
+Then open [http://localhost:8000](http://localhost:8000).
 
-**Alternatives**
+No build step. D3, Three.js, and fonts are loaded from CDNs in `index.html`.
 
-```bash
-# Node (npx, no install)
-npx --yes serve website
+### GitHub Pages
 
-# PHP built-in server
-cd website && php -S localhost:8000
-```
+The site is hosted on GitHub Pages.
 
-No build step or package manager is required for the website. Dependencies (D3, Three.js, Google Fonts) are loaded from CDNs in `index.html`.
+1. Push to `main` (workflow in `.github/workflows/deploy-pages.yml` publishes the `website/` folder).
+2. On GitHub: **Settings → Pages → Build and deployment → Source** → choose **GitHub Actions**.
+3. After the workflow succeeds, open
+  **[https://com-480-data-visualization.github.io/com-480-project-pff/](https://com-480-data-visualization.github.io/com-480-project-pff/)**
 
 ---
 
@@ -44,15 +35,17 @@ No build step or package manager is required for the website. Dependencies (D3, 
 
 The narrative scrolls through six analytical views:
 
-| Section | What it shows |
-|--------|----------------|
-| **Hero** | 3D particle court — sample of shots over time |
-| **Expected value** | Court heatmap: points per attempt, FG%, or volume |
-| **League adaptation** | Season-by-season shot maps vs league average + trend lines |
-| **Team DNA** | Zone profiles: team vs league vs champion |
-| **Player fingerprint** | Radial chart of zone frequency and efficiency |
-| **Player movement** | Stacked zone shares across team stints |
-| **Clutch** | Last-5-seconds Q4 shot locations vs rest of game + player scatter |
+
+| Section                | What it shows                                                     |
+| ---------------------- | ----------------------------------------------------------------- |
+| **Hero**               | 3D particle court — sample of shots over time                     |
+| **Expected value**     | Court heatmap: points per attempt, FG%, or volume                 |
+| **League adaptation**  | Season-by-season shot maps vs league average + trend lines        |
+| **Team DNA**           | Zone profiles: team vs league vs champion                         |
+| **Player fingerprint** | Radial chart of zone frequency and efficiency                     |
+| **Player movement**    | Stacked zone shares across team stints                            |
+| **Clutch**             | Last-5-seconds Q4 shot locations vs rest of game + player scatter |
+
 
 **Interaction tips**
 
@@ -66,44 +59,22 @@ The narrative scrolls through six analytical views:
 
 ## Technical setup
 
-### Requirements
+**Website**: static HTML/CSS/JS in `website/`. One shared module (`court.js`) plus one file per visualization. D3 v7 for charts; Three.js (ES module) for the hero section only.
 
-| Component | Version / notes |
-|-----------|-----------------|
-| **Browser** | Modern evergreen browser (Chrome, Firefox, Safari, Edge) |
-| **Python** | 3.10+ — only needed to **regenerate** JSON from raw CSVs |
-| **Local HTTP server** | Any static file server (see Quick start) |
+**Data pipeline**: `preprocess.py` (Python 3.10+, `numpy`, `pandas` in `requirements.txt`) reads raw season CSVs and writes JSON to `website/data/`. Those JSON files are committed, so the site runs without reprocessing.
 
-### Regenerating `website/data` (optional)
+To regenerate data:
 
-Preprocessed JSON files are **committed** in `website/data/`, so you can run the site without raw CSVs. To rebuild them from source:
-
-1. Download the raw shot data into `NBA_Shots_04_25/` (see [Data](#data)).
-
-2. Install Python dependencies:
+1. Clone [NBA_Shots_04_25](https://github.com/DomSamangy/NBA_Shots_04_25) into `NBA_Shots_04_25/` at the repo root (`NBA_*_Shots.csv`).
+2. Install deps and run:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-3. Run preprocessing from the repository root:
-
-```bash
 python preprocess.py
 ```
 
-This reads all `NBA_Shots_04_25/NBA_*_Shots.csv` files and writes aggregated JSON under `website/data/`. Expect several minutes and ~8 GB RAM for the full merge.
-
-### Exploratory analysis
-
-`eda.ipynb` documents early data exploration (pandas, matplotlib). Open with Jupyter:
-
-```bash
-pip install jupyter matplotlib
-jupyter notebook eda.ipynb
-```
+Expect several minutes and ~8 GB RAM for the full merge.
 
 ---
 
@@ -111,33 +82,26 @@ jupyter notebook eda.ipynb
 
 ```
 com-480-project-pff/
-├── README.md                 # This file
-├── requirements.txt          # Python deps for preprocess.py
-├── preprocess.py             # CSV → website/data/*.json
-├── eda.ipynb                 # Exploratory analysis notebook
-├── NBA_Shots_04_25/          # Raw season CSVs (not in git — see Data)
-└── website/                  # Static interactive site
+├── README.md
+├── requirements.txt
+├── preprocess.py
+├── eda.ipynb
+├── NBA_Shots_04_25/          # Raw CSVs (gitignored)
+└── website/
     ├── index.html
     ├── style.css
-    ├── js/                   # One module per visualization
-    │   ├── court.js          # Shared court geometry & drawing
-    │   ├── hero.js           # Three.js hero (ES module)
+    ├── js/
+    │   ├── court.js          # Shared court geometry, pct(), shortTeam()
+    │   ├── hero.js           # Three.js (ES module)
     │   ├── value.js
     │   ├── revolution.js
     │   ├── team.js
     │   ├── fingerprint.js
     │   ├── player-evolution.js
     │   ├── clutch.js
-    │   └── main.js           # Scroll / nav behavior
+    │   └── main.js
     └── data/                 # Preprocessed JSON (committed)
 ```
-
-### Front-end stack
-
-- **HTML / CSS / vanilla JavaScript** — no bundler; each viz is an async IIFE in its own file.
-- **[D3.js v7](https://d3js.org/)** — charts, scales, axes, transitions.
-- **[Three.js r160](https://threejs.org/)** — hero court (ES modules via import map).
-- **ES modules** only in `hero.js`; other scripts are classic scripts with global `Court` from `court.js`.
 
 ---
 
@@ -145,23 +109,21 @@ com-480-project-pff/
 
 ### Source dataset
 
-We use [NBA_Shots_04_25](https://github.com/DomSamangy/NBA_Shots_04_25): NBA regular-season shot data from **2003–04 to 2024–25** (~4.4M attempts). Each row is one field-goal attempt with player, team, outcome, shot type, court coordinates, zone, and game-clock context.
+[NBA_Shots_04_25](https://github.com/DomSamangy/NBA_Shots_04_25): NBA regular-season shot data from **2003–04 to 2024–25** (~4.4M attempts). Each row is one field-goal attempt with player, team, outcome, shot type, court coordinates, zone, and game-clock context.
 
 ### What is hosted on GitHub
 
-| Path | In repository? | Description |
-|------|----------------|-------------|
-| `website/data/*.json` | Yes | Aggregated data used by the website |
-| `NBA_Shots_04_25/*.csv` | **No** (gitignored) | Full raw CSVs (~GB) — clone separately |
 
-To obtain raw CSVs:
+| Path                    | In repository?  | Description                         |
+| ----------------------- | --------------- | ----------------------------------- |
+| `website/data/*.json`   | Yes             | Aggregated data used by the website |
+| `NBA_Shots_04_25/*.csv` | No (gitignored) | Raw season CSVs — clone separately  |
+
 
 ```bash
 git clone https://github.com/DomSamangy/NBA_Shots_04_25.git NBA_Shots_04_25
 ```
 
-Place the folder at the repository root (next to `preprocess.py`). Season files must match `NBA_*_Shots.csv`.
+### Preprocessing
 
-### Preprocessing summary
-
-`preprocess.py` merges seasons, normalizes coordinates (including 2020–22 compressed coords), bins shots on a hex grid, and exports compact JSON for expected value, seasonal heatmaps, team/player profiles, clutch comparison, and hero samples.
+`preprocess.py` merges seasons, normalizes coordinates (including 2020-22 compressed coords), bins shots on a hex grid, and exports JSON for expected value, seasonal heatmaps, team/player profiles, clutch comparison, and hero samples.
