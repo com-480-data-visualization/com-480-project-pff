@@ -22,12 +22,17 @@ No build step. D3, Three.js, and fonts are loaded from CDNs in `index.html`.
 
 ### GitHub Pages
 
-The site is hosted on GitHub Pages.
+Live site: [com-480-data-visualization.github.io/com-480-project-pff](https://com-480-data-visualization.github.io/com-480-project-pff/)
 
-1. Push to `main` (workflow in `.github/workflows/deploy-pages.yml` publishes the `website/` folder).
-2. On GitHub: **Settings → Pages → Build and deployment → Source** → choose **GitHub Actions**.
-3. After the workflow succeeds, open
-  **[https://com-480-data-visualization.github.io/com-480-project-pff/](https://com-480-data-visualization.github.io/com-480-project-pff/)**
+**One-time setup** (repo admin):
+
+1. **Settings → Pages → Build and deployment**
+2. **Source:** Deploy from a branch
+3. **Branch:** `gh-pages` · folder **`/ (root)`** → Save
+
+Each push to `main` runs the workflow and updates the `gh-pages` branch from `website/` (Three.js, D3, and JSON included). If the workflow failed before with *Get Pages site failed*, that was because Pages was not enabled yet — the steps above fix it.
+
+**Re-deploy manually:** Actions → *Deploy website to GitHub Pages* → *Run workflow*
 
 ---
 
