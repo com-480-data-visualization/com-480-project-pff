@@ -24,14 +24,16 @@
       color: d3.scaleSequential(d3.interpolateRdYlBu).domain([1.2, 0.5]).clamp(true),
       label: v => `${v.toFixed(2)} pts/attempt`,
       noteText: 'Expected points per attempt (FG% × point value). Avg ≈ 0.93',
-      legendMin: '0.5 (cold)', legendMax: '1.2+ (hot)',
+      legendTicks: [0.5, 0.7, 0.85, 1.0, 1.2],
+      formatTick: v => v.toFixed(2),
     },
     fg: {
       accessor: d => d.fg,
       color: d3.scaleSequential(d3.interpolateRdYlBu).domain([0.60, 0.30]).clamp(true),
       label: v => `${(v*100).toFixed(1)}% FG`,
       noteText: 'Field goal percentage at each court location.',
-      legendMin: '30% FG', legendMax: '60%+ FG',
+      legendTicks: [0.30, 0.38, 0.46, 0.54, 0.60],
+      formatTick: v => `${Math.round(v * 100)}%`,
     },
     vol: {
       accessor: d => d.count,
@@ -41,7 +43,11 @@
       })(),
       label: v => `${v.toLocaleString()} shots`,
       noteText: 'Total shots taken at each court location (log scale).',
-      legendMin: 'Few shots', legendMax: 'Many shots',
+      legendTicks: (() => {
+        const ext = d3.extent(data, d => d.count);
+        return [ext[0], 100, 1000, 10000, ext[1]];
+      })(),
+      formatTick: v => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(v)),
     },
   };
 
@@ -53,17 +59,27 @@
     .style('position', 'fixed')
     .style('pointer-events', 'none');
 
+  function valueAtGradientT(t, d0, d1, isLog) {
+    if (isLog) {
+      const log = Math.log;
+      return Math.exp(log(d0) + (1 - t) * (log(d1) - log(d0)));
+    }
+    return d0 + (1 - t) * (d1 - d0);
+  }
+
   function renderLegend(mode) {
-    const s  = scales[mode];
+    const s = scales[mode];
+    const isLog = mode === 'vol';
     const stops = d3.range(0, 1.01, 0.1);
     const [d0, d1] = s.color.domain();
-    const gradColors = stops.map(t => s.color(d0 + (1 - t) * (d1 - d0)));
+    const gradColors = stops.map(t => s.color(valueAtGradientT(t, d0, d1, isLog)));
+    const tickLabels = s.legendTicks.map(v => s.formatTick(v));
 
     legendEl.innerHTML = `
-      <div style="background:linear-gradient(to right,${stops.map((t,i)=>gradColors[i]).join(',')});
-                  width:120px;height:10px;border-radius:5px;display:inline-block;vertical-align:middle"></div>
-      <span style="margin-left:.4rem">${s.legendMin}</span>
-      <span style="margin-left:.3rem">→ ${s.legendMax}</span>
+      <div class="value-legend-bar">
+        <div class="value-legend-gradient" style="background:linear-gradient(to right,${gradColors.join(',')})"></div>
+        <div class="value-legend-ticks">${tickLabels.map(l => `<span>${l}</span>`).join('')}</div>
+      </div>
     `;
     noteEl.innerHTML = s.noteText;
   }

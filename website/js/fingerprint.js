@@ -182,9 +182,11 @@
   svg.append('defs').append('clipPath').attr('id', 'fp-photo-clip')
     .append('circle').attr('cx', CX).attr('cy', CY).attr('r', PHOTO_R);
 
-  // ── Background rings ──────────────────────────────────────────────────────
+  // ── Background rings + radial frequency ticks ─────────────────────────────
+  const FREQ_TICKS = [0, 0.25, 0.5, 0.75, 1];
+
   const gridG = svg.append('g');
-  [0.25, 0.5, 0.75, 1].forEach(t => {
+  FREQ_TICKS.slice(1).forEach(t => {
     gridG.append('circle')
       .attr('cx', CX).attr('cy', CY)
       .attr('r', R_INNER + t * (R_OUTER - R_INNER))
@@ -192,6 +194,60 @@
       .attr('stroke', '#1e1e35')
       .attr('stroke-width', 1);
   });
+
+  const freqTicksG = svg.append('g').attr('class', 'fp-freq-ticks');
+  const freqLegendEl = document.getElementById('fp-freq-legend');
+
+  const FREQ_TICK_ABOVE = 20;
+
+  function freqTickY(t, r) {
+    const pad = FREQ_TICK_ABOVE + (t === 1 ? 6 : 0);
+    return CY - r - pad;
+  }
+
+  function updateFreqScale(maxFreq) {
+    const tickData = FREQ_TICKS.map(t => ({
+      t,
+      r: R_INNER + t * (R_OUTER - R_INNER),
+      label: t === 0 ? '0%' : pct(maxFreq * t),
+    }));
+
+    freqTicksG.selectAll('text.fp-freq-tick').data(tickData, d => d.t)
+      .join(
+        enter => enter.append('text')
+          .attr('class', 'fp-freq-tick')
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'auto')
+          .attr('fill', '#9090b8')
+          .attr('font-size', '8.5px')
+          .attr('font-family', 'Inter, sans-serif')
+          .attr('x', CX)
+          .attr('y', d => freqTickY(d.t, d.r))
+          .text(d => d.label),
+        update => update
+          .attr('y', d => freqTickY(d.t, d.r))
+          .text(d => d.label),
+      );
+
+    if (freqLegendEl) {
+      freqLegendEl.textContent = `0% → ${pct(maxFreq)} of attempts`;
+    }
+
+    freqTicksG.selectAll('text.fp-freq-axis-title').data([1]).join(
+      enter => enter.append('text')
+        .attr('class', 'fp-freq-axis-title')
+        .attr('x', CX)
+        .attr('y', CY - R_OUTER - FREQ_TICK_ABOVE - 14)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#7070a0')
+        .attr('font-size', '8px')
+        .attr('font-family', 'Inter, sans-serif')
+        .text('Share of attempts'),
+      update => update.attr('y', CY - R_OUTER - FREQ_TICK_ABOVE - 14),
+    );
+
+    freqTicksG.raise();
+  }
 
   // ── Spoke dividers ────────────────────────────────────────────────────────
   const spokeG = svg.append('g');
@@ -344,6 +400,8 @@
       </div>
     `;
 
+    updateFreqScale(maxFreq);
+    freqTicksG.raise();
     renderTrend(p.seasons_3pt || []);
   }
 

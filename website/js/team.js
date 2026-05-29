@@ -156,6 +156,14 @@
       .call(axis => axis.selectAll('text').attr('fill', '#7070a0').attr('font-size', 10))
       .call(axis => axis.selectAll('path,line').attr('stroke', '#1e1e35'));
 
+    g.append('text')
+      .attr('x', innerW / 2)
+      .attr('y', innerH + 36)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#7070a0')
+      .attr('font-size', 11)
+      .text('Share of team attempts (%)');
+
     g.append('g')
       .call(d3.axisLeft(y).tickSize(0).tickFormat(z => ZONE_LABEL[z]))
       .call(axis => axis.selectAll('text')

@@ -12,6 +12,15 @@
     'Above the Break 3',
   ];
 
+  const ZONE_SHORT = {
+    'Restricted Area': 'At rim',
+    'In The Paint (Non-RA)': 'Paint',
+    'Mid-Range': 'Mid-range',
+    'Left Corner 3': 'L corner 3',
+    'Right Corner 3': 'R corner 3',
+    'Above the Break 3': 'Above break 3',
+  };
+
   const COLORS = {
     'Restricted Area': '#C9082A',
     'In The Paint (Non-RA)': '#E4475F',
@@ -77,6 +86,14 @@
       .call(axis => axis.selectAll('text').attr('fill', '#7070a0'))
       .call(axis => axis.selectAll('path,line').attr('stroke', '#1e1e35'));
 
+    g.append('text')
+      .attr('x', innerW / 2)
+      .attr('y', innerH + 36)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#7070a0')
+      .attr('font-size', 11)
+      .text('Share of attempts (%)');
+
     const stacked = stints.map(stint => {
       let cursor = 0;
       return {
@@ -104,11 +121,26 @@
       .attr('opacity', 0.88)
       .call(sel => sel.transition().duration(650).attr('width', d => Math.max(0, x(d.end) - x(d.start))));
 
+    rows.selectAll('text.zone-pct').data(d => d.zones.filter(z => z.share >= 0.08)).join('text')
+      .attr('class', 'zone-pct')
+      .attr('x', d => x(d.start) + (x(d.end) - x(d.start)) / 2)
+      .attr('y', y.bandwidth() / 2)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('fill', '#f4f4fa')
+      .attr('font-size', 9)
+      .attr('font-weight', 600)
+      .attr('opacity', 0)
+      .text(d => pct(d.share))
+      .transition()
+      .duration(650)
+      .attr('opacity', 1);
+
     const legend = svg.append('g').attr('transform', `translate(${margin.left},${H - 46})`);
     ZONES.forEach((zone, i) => {
       const row = legend.append('g').attr('transform', `translate(${(i % 3) * 165},${Math.floor(i / 3) * 20})`);
       row.append('rect').attr('width', 11).attr('height', 11).attr('rx', 3).attr('fill', COLORS[zone]);
-      row.append('text').attr('x', 17).attr('y', 9).attr('fill', '#7070a0').attr('font-size', 10).text(zone.replace('In The Paint (Non-RA)', 'Paint'));
+      row.append('text').attr('x', 17).attr('y', 9).attr('fill', '#7070a0').attr('font-size', 10).text(ZONE_SHORT[zone]);
     });
 
     const biggestShift = stints.length > 1

@@ -92,6 +92,7 @@
       <div class="section-viz">
         <div class="map-wrap">
           <svg id="revolution-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet"></svg>
+          <div id="rev-tooltip" class="tooltip"></div>
           <div class="map-legend">
             <div class="map-legend-title">Shot frequency</div>
             <div class="legend-row"><span class="swatch" style="background:#2166ac"></span>Below avg</div>
@@ -139,16 +140,23 @@
       </div>
       <div class="section-viz">
         <div class="fingerprint-wrap">
-          <svg id="fingerprint-svg" viewBox="0 0 420 420" preserveAspectRatio="xMidYMid meet"></svg>
-          <div id="fingerprint-tooltip" class="tooltip"></div>
+          <div class="fingerprint-chart">
+            <svg id="fingerprint-svg" viewBox="0 0 420 420" preserveAspectRatio="xMidYMid meet"></svg>
+            <div id="fingerprint-tooltip" class="tooltip"></div>
+          </div>
           <div class="map-legend fingerprint-map-legend">
-            <div class="map-legend-title">Shot fingerprint</div>
-            <div class="fg-gradient"></div>
-            <div class="fg-gradient-labels">
-              <span>28% FG</span>
-              <span>65% FG</span>
+            <div class="fp-legend-fg">
+              <span class="fp-legend-key">Color</span>
+              <div class="fg-gradient"></div>
+              <div class="fg-gradient-labels">
+                <span>28%</span>
+                <span>65% FG</span>
+              </div>
             </div>
-            <div class="legend-row small-text">Length = frequency</div>
+            <div class="fp-legend-len">
+              <span class="fp-legend-key">Length</span>
+              <span class="fp-legend-val" id="fp-freq-legend">Zone share</span>
+            </div>
           </div>
         </div>
       </div>

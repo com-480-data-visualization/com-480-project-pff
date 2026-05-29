@@ -7,6 +7,8 @@
   const playBtn = document.getElementById('rev-play');
   const summaryEl = document.getElementById('rev-summary');
   const metricsEl = document.getElementById('rev-metrics');
+  const tipEl = document.getElementById('rev-tooltip');
+  const mapWrap = svg.node().closest('.map-wrap');
 
   const { W, H, toX, toY, drawCourt } = Court;
   const GRID = 25;
@@ -27,6 +29,38 @@
     .clamp(true);
 
   function pct(v) { return `${(v * 100).toFixed(1)}%`; }
+
+  function showTip(event, html) {
+    if (!tipEl || !mapWrap) return;
+    const rect = mapWrap.getBoundingClientRect();
+    tipEl.style.left = `${event.clientX - rect.left + 12}px`;
+    tipEl.style.top = `${event.clientY - rect.top - 10}px`;
+    tipEl.innerHTML = html;
+    tipEl.classList.add('visible');
+  }
+
+  function hideTip() {
+    if (tipEl) tipEl.classList.remove('visible');
+  }
+
+  function binTipHtml(d) {
+    const vs = d.rel >= 1.05 ? 'above league avg' : d.rel <= 0.95 ? 'below league avg' : 'near league avg';
+    return `
+      <strong>${d.rel.toFixed(2)}× league average</strong> (${vs})<br>
+      Shots this season: ${d.count.toLocaleString()}<br>
+      FG%: ${pct(d.fg)}
+    `;
+  }
+
+  function bindBinHover(sel) {
+    sel
+      .attr('pointer-events', d => (d.count < 3 ? 'none' : 'all'))
+      .on('mousemove', (event, d) => {
+        if (d.count < 3) return;
+        showTip(event, binTipHtml(d));
+      })
+      .on('mouseleave', hideTip);
+  }
 
   const seasons = raw.seasons.map(Number);
   const trendSeries = [
@@ -64,10 +98,13 @@
         .attr('height', CELL_H)
         .attr('fill', d => d.count < 3 ? 'transparent' : color(d.rel))
         .attr('opacity', 0)
+        .call(bindBinHover)
         .call(e => e.transition().duration(420).attr('opacity', d => d.count < 3 ? 0 : 0.84)),
-      update => update.call(u => u.transition().duration(520)
-        .attr('fill', d => d.count < 3 ? 'transparent' : color(d.rel))
-        .attr('opacity', d => d.count < 3 ? 0 : 0.84)),
+      update => update
+        .call(bindBinHover)
+        .call(u => u.transition().duration(520)
+          .attr('fill', d => d.count < 3 ? 'transparent' : color(d.rel))
+          .attr('opacity', d => d.count < 3 ? 0 : 0.84)),
       exit => exit.transition().duration(250).attr('opacity', 0).remove()
     );
 

@@ -1,54 +1,167 @@
-# Milestone 1 - Data Visualization
+# NBA Shots — 4.4 Million Stories
 
-## Dataset
-For this project we will be using the dataset [NBA_Shots_04_25 GitHub dataset](https://github.com/DomSamangy/NBA_Shots_04_25). It contains NBA regular-season shot data from 2003–2004 to 2024–2025 and includes one CSV per season as well as a merged dataset, covering over two decades of shot attempts. 
+Interactive data-visualization project for **COM-480 (EPFL)** exploring how NBA shot selection evolved from 2003–04 to 2024–25 across the league, teams, and players.
 
-Each of the entries of the dataset contains the information related to a single shot that was taken. Among these information we can find the following:
-- Player who took the shot
-- Team from which the player was
-- Whether the shot was successful or not
-- Type of shot
-- Coordinates from where the shot occurred 
-- When in the game the shot was taken
-This makes the dataset particularly well-suited for spatial and temporal analysis.
+**Repository:** [github.com/com-480-data-visualization/com-480-project-pff](https://github.com/com-480-data-visualization/com-480-project-pff)
 
-The dataset is sourced from NBA.com and is already structured and consistent across seasons, allowing to avoid too much preprocessing, or any additional scrapping to retrieve more data. However, the authors explicitly note that it is relatively “raw” and requires some wrangling. 
-It could also be interesting to retrieve data more specifics to the players and overall scores of the games, to allow for some additional information.
-The data processing will include the merging of multiple seasonal CSV files, as well as the potential handling of missing or inconsistent values across seasons. We will also have to potentially perform some filtering to focus more specifically on some players, teams or seasons, allowing us to delve into a more detailed analysis.
+---
 
-Overall, the dataset is high-quality and standardised, requiring moderate cleaning but no complex data collection, making it appropriate for this visualisation focused project.
+## Quick start — run the website
 
-## Problematic
-The goal of this project is to analyse and visualise how shot selection in the NBA has evolved over time, across players and teams.
+The site is a **static** front end (`website/`). It loads JSON from `website/data/` and must be served over HTTP (opening `index.html` directly will block `fetch` / `d3.json`).
 
-The main question we aim at answering would be: How have shooting patterns (location, type, and frequency) evolved in the NBA, and how do they differ between players and teams?
-The study would be conducted over several axis:
-Temporal: shot distribution changes over seasons and game periods.
-Player: differences in shooting tendencies between players.
-Team: differences in shot profiles according to the teams.
-These three principal axes can also be combined two by two to conduct additional analysis.
+1. Clone the repository and go to the project root:
 
-With this project we want to highlight the transformation of modern basketball through spatial shot distributions. Basketball has undergone a major analytical revolution in the past 20 years and this dataset allows us to visually demonstrate these changes in a clear and engaging way using real game data.
-The targeted audience would be sport enthusiasts who are interested in basketball analytics. And the visualisation aspect would allow the analytics to be more accessible to people.
+```bash
+git clone https://github.com/com-480-data-visualization/com-480-project-pff.git
+cd com-480-project-pff
+```
 
-## Exploratory Data Analysis
+2. Start a local server from the `website` folder:
 
-The dataset contains every regular-season field goal attempts recorded by the NBA from the 2003-04 season to 2024-25, covering over 4.4 million shots across 22 seasons, 2,265 unique players, and 36 team identities (30 current franchises plus historical versions of teams that relocated or rebranded over the period). Each row describes a single attempt with spatial coordinates in feet, the outcome (made or missed), the shot type (2PT or 3PT), the court zone, the player and team, and the game clock context.
+```bash
+cd website
+python3 -m http.server 8000
+```
 
-Pre-processing involved correcting column types, adding two derived helper columns, dropping the few rows with missing spatial coordinates (< 0.1% of the data).
+3. Open [http://localhost:8000](http://localhost:8000) in a browser.
 
-The league-wide field goal percentage sits around 46%, which is typical for professional basketball. The most striking trend is the three-point revolution: the share of 3PT attempts grew from roughly 22% of all shots in 2004 to over 40% by 2025, reflecting a fundamental strategic shift in the game driven by analytics showing that threes and close-range shots offer the best expected value.
+**Alternatives**
 
-By court zone, the restricted area concentrates the highest shot volume and the best efficiency (~63% FG%), while mid-range shots combine below-average efficiency (~40%) with only 2 points, explaining why modern teams increasingly avoid them. Corner threes post a higher FG% than above-the-break threes due to the shorter distance. Shot charts confirm this: density is highest right under the basket and along the three-point arc, with a visible void in the mid-range area in recent seasons.
+```bash
+# Node (npx, no install)
+npx --yes serve website
 
-Finally, shot volume decreases slightly across quarters while FG% drops more noticeably toward the end of regulation, likely reflecting fatigue and tighter defense in close games.
+# PHP built-in server
+cd website && php -S localhost:8000
+```
 
-For more details, check 'eda.ipynb'.
+No build step or package manager is required for the website. Dependencies (D3, Three.js, Google Fonts) are loaded from CDNs in `index.html`.
 
-## Related Work
+---
 
-Previous work, such as the [work of Kirk Goldsberry](https://fivethirtyeight.com/features/how-mapping-shots-in-the-nba-changed-it-forever/), has been done on analyzing the evolution of shot selection. Kirk Goldsberry revealed how the analytical optimization of the three-point line has driven teams into taking less mid-rangers and rather go for shots at the rim and the three point line. To prove this shift, Goldsberry used spatial smoothed heat maps of shot attempts and field goals made. However, while he and various other open-source developers attempted to build interactive web apps to visualize this, to this day, none remain functional and visualizations seem, for the most part, ‘broken’. 
+## Intended usage
 
-While extensive work has been done to analyse the trends of the NBA’s shot profile, by aggregating data at the season or career level, our original approach is to visualize and understand how shot selection evolves iin the NBA over the seasons, but now also understand how game context, organization’s coaching and philosophy, and player transitions between franchises dictate spatial behavior. Rather than just showing where players shoot, this project attempts to model how shot selection dynamically changes depending on the time left in the game, the differences between teams (and thus their coaches), and whether an individual player's shot profile adapts or remains static when they change teams. 
+The narrative scrolls through six analytical views:
 
-Finally, in attempt to visualize the previously discussed narrative, the visual language and framing of our project draws inspiration from Kirk Goldsberry’s smoothed heat maps to effectively communicate shot volume and efficiency, alongside the immersive, modern 3D NBA shot chart web applications, such as those rapidly introduced [here](https://blog.stackademic.com/3d-nba-shot-chart-web-app-with-streamlit-196dd71720f9), to provide a more dynamic, interactive exploration of spatial data than traditional flat plots.
+| Section | What it shows |
+|--------|----------------|
+| **Hero** | 3D particle court — sample of shots over time |
+| **Expected value** | Court heatmap: points per attempt, FG%, or volume |
+| **League adaptation** | Season-by-season shot maps vs league average + trend lines |
+| **Team DNA** | Zone profiles: team vs league vs champion |
+| **Player fingerprint** | Radial chart of zone frequency and efficiency |
+| **Player movement** | Stacked zone shares across team stints |
+| **Clutch** | Last-5-seconds Q4 shot locations vs rest of game + player scatter |
+
+**Interaction tips**
+
+- Use toggles, sliders, and tabs in each section to filter seasons, players, or teams.
+- Hover court cells on heatmaps for exact values (ratio, counts, FG%).
+- Player headshots are loaded from `cdn.nba.com` (requires network).
+
+**Audience:** basketball fans and anyone interested in spatial sports analytics, without requiring a statistics background.
+
+---
+
+## Technical setup
+
+### Requirements
+
+| Component | Version / notes |
+|-----------|-----------------|
+| **Browser** | Modern evergreen browser (Chrome, Firefox, Safari, Edge) |
+| **Python** | 3.10+ — only needed to **regenerate** JSON from raw CSVs |
+| **Local HTTP server** | Any static file server (see Quick start) |
+
+### Regenerating `website/data` (optional)
+
+Preprocessed JSON files are **committed** in `website/data/`, so you can run the site without raw CSVs. To rebuild them from source:
+
+1. Download the raw shot data into `NBA_Shots_04_25/` (see [Data](#data)).
+
+2. Install Python dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+3. Run preprocessing from the repository root:
+
+```bash
+python preprocess.py
+```
+
+This reads all `NBA_Shots_04_25/NBA_*_Shots.csv` files and writes aggregated JSON under `website/data/`. Expect several minutes and ~8 GB RAM for the full merge.
+
+### Exploratory analysis
+
+`eda.ipynb` documents early data exploration (pandas, matplotlib). Open with Jupyter:
+
+```bash
+pip install jupyter matplotlib
+jupyter notebook eda.ipynb
+```
+
+---
+
+## Repository structure
+
+```
+com-480-project-pff/
+├── README.md                 # This file
+├── requirements.txt          # Python deps for preprocess.py
+├── preprocess.py             # CSV → website/data/*.json
+├── eda.ipynb                 # Exploratory analysis notebook
+├── NBA_Shots_04_25/          # Raw season CSVs (not in git — see Data)
+└── website/                  # Static interactive site
+    ├── index.html
+    ├── style.css
+    ├── js/                   # One module per visualization
+    │   ├── court.js          # Shared court geometry & drawing
+    │   ├── hero.js           # Three.js hero (ES module)
+    │   ├── value.js
+    │   ├── revolution.js
+    │   ├── team.js
+    │   ├── fingerprint.js
+    │   ├── player-evolution.js
+    │   ├── clutch.js
+    │   └── main.js           # Scroll / nav behavior
+    └── data/                 # Preprocessed JSON (committed)
+```
+
+### Front-end stack
+
+- **HTML / CSS / vanilla JavaScript** — no bundler; each viz is an async IIFE in its own file.
+- **[D3.js v7](https://d3js.org/)** — charts, scales, axes, transitions.
+- **[Three.js r160](https://threejs.org/)** — hero court (ES modules via import map).
+- **ES modules** only in `hero.js`; other scripts are classic scripts with global `Court` from `court.js`.
+
+---
+
+## Data
+
+### Source dataset
+
+We use [NBA_Shots_04_25](https://github.com/DomSamangy/NBA_Shots_04_25): NBA regular-season shot data from **2003–04 to 2024–25** (~4.4M attempts). Each row is one field-goal attempt with player, team, outcome, shot type, court coordinates, zone, and game-clock context.
+
+### What is hosted on GitHub
+
+| Path | In repository? | Description |
+|------|----------------|-------------|
+| `website/data/*.json` | Yes | Aggregated data used by the website |
+| `NBA_Shots_04_25/*.csv` | **No** (gitignored) | Full raw CSVs (~GB) — clone separately |
+
+To obtain raw CSVs:
+
+```bash
+git clone https://github.com/DomSamangy/NBA_Shots_04_25.git NBA_Shots_04_25
+```
+
+Place the folder at the repository root (next to `preprocess.py`). Season files must match `NBA_*_Shots.csv`.
+
+### Preprocessing summary
+
+`preprocess.py` merges seasons, normalizes coordinates (including 2020–22 compressed coords), bins shots on a hex grid, and exports compact JSON for expected value, seasonal heatmaps, team/player profiles, clutch comparison, and hero samples.
