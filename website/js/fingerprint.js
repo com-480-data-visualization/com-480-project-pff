@@ -152,7 +152,6 @@
   }
 
   const CX = 210, CY = 210, R_OUTER = 165, R_INNER = 65;
-  const PHOTO_R = 55;
 
   // 6 zones (exclude Backcourt)
   const ZONES = [
@@ -176,10 +175,6 @@
     .domain([0.28, 0.65])
     .range(['#2166ac', '#C9082A'])
     .clamp(true);
-
-  // ── Defs: clip for player photo ───────────────────────────────────────────
-  svg.append('defs').append('clipPath').attr('id', 'fp-photo-clip')
-    .append('circle').attr('cx', CX).attr('cy', CY).attr('r', PHOTO_R);
 
   // ── Background rings + radial frequency ticks ─────────────────────────────
   const FREQ_TICKS = [0, 0.25, 0.5, 0.75, 1];
@@ -285,26 +280,25 @@
 
   // ── Bars group ────────────────────────────────────────────────────────────
   const barsG  = svg.append('g');
-  const photoEl = svg.append('image')
-    .attr('clip-path', 'url(#fp-photo-clip)')
-    .attr('preserveAspectRatio', 'xMidYMin slice');
 
   // Centre ring (covers inner part)
   svg.append('circle')
     .attr('cx', CX).attr('cy', CY).attr('r', R_INNER)
     .attr('fill', '#090910');
 
-  // Centre text elements (player name + total)
+  // Centre text (player name + total)
   const nameEl  = svg.append('text')
-    .attr('x', CX).attr('y', CY + PHOTO_R + 14)
+    .attr('x', CX).attr('y', CY - 6)
     .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'middle')
     .attr('fill', '#e8e8f0')
     .attr('font-size', '11px')
     .attr('font-weight', '600')
     .attr('font-family', 'Inter, sans-serif');
   const shotsEl = svg.append('text')
-    .attr('x', CX).attr('y', CY + PHOTO_R + 28)
+    .attr('x', CX).attr('y', CY + 10)
     .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'middle')
     .attr('fill', '#7070a0')
     .attr('font-size', '9px')
     .attr('font-family', 'Inter, sans-serif');
@@ -366,13 +360,6 @@
           .call(bindZoneHover, p.overall_fg),
       );
     hitG.raise();
-
-    // Photo
-    const pid = p.player_id;
-    photoEl
-      .attr('href', `https://cdn.nba.com/headshots/nba/latest/1040x760/${pid}.png`)
-      .attr('x', CX - PHOTO_R).attr('y', CY - PHOTO_R)
-      .attr('width', PHOTO_R * 2).attr('height', PHOTO_R * 2);
 
     nameEl.text(playerName.split(' ').slice(-1)[0]);  // last name
     shotsEl.text(`${p.total_shots.toLocaleString()} shots`);
