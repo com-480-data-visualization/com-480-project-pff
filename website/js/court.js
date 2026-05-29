@@ -85,5 +85,32 @@ const Court = (() => {
     return g;
   }
 
-  return { SCALE, W, H, BX, BY, toX, toY, drawCourt };
+  const pct = v => `${(v * 100).toFixed(1)}%`;
+
+  const TEAM_SHORT_NAMES = {
+    'Golden State Warriors': 'Warriors',
+    'Los Angeles Lakers':    'Lakers',
+    'Los Angeles Clippers':  'Clippers',
+    'Oklahoma City Thunder': 'Thunder',
+    'Cleveland Cavaliers':   'Cavaliers',
+    'Houston Rockets':       'Rockets',
+    'Brooklyn Nets':         'Nets',
+    'Philadelphia 76ers':    '76ers',
+    'Washington Wizards':    'Wizards',
+    'San Antonio Spurs':     'Spurs',
+    'Boston Celtics':        'Celtics',
+    'Denver Nuggets':        'Nuggets',
+    'Miami Heat':            'Heat',
+    'Milwaukee Bucks':       'Bucks',
+    'Phoenix Suns':          'Suns',
+    'Dallas Mavericks':      'Mavs',
+    'New York Knicks':       'Knicks',
+  };
+  const shortTeam = name => TEAM_SHORT_NAMES[name] || name;
+
+  return {
+    SCALE, W, H, BX, BY,
+    CORNER_Y_DATA, CORNER_SVG_Y, CORNER_SVG_XL, CORNER_SVG_XR, R3, FT_SVG_Y,
+    toX, toY, drawCourt, pct, shortTeam,
+  };
 })();

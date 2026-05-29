@@ -10,7 +10,7 @@
   const tipEl = document.getElementById('rev-tooltip');
   const mapWrap = svg.node().closest('.map-wrap');
 
-  const { W, H, toX, toY, drawCourt } = Court;
+  const { W, H, toX, toY, drawCourt, pct } = Court;
   const GRID = 25;
   const HEX_W = 50 / GRID;
   const HEX_H = HEX_W * Math.sqrt(3) / 2;
@@ -27,8 +27,6 @@
     .domain([0, 1, 3.2])
     .interpolator(t => d3.interpolateRdBu(1 - t))
     .clamp(true);
-
-  function pct(v) { return `${(v * 100).toFixed(1)}%`; }
 
   function showTip(event, html) {
     if (!tipEl || !mapWrap) return;

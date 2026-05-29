@@ -36,19 +36,7 @@
   const innerW = W - margin.left - margin.right;
   const innerH = H - margin.top - margin.bottom;
 
-  function pct(v) { return `${(v * 100).toFixed(1)}%`; }
-  function shortTeam(team) {
-    return team
-      .replace('Golden State Warriors', 'Warriors')
-      .replace('Los Angeles Lakers', 'Lakers')
-      .replace('Los Angeles Clippers', 'Clippers')
-      .replace('Oklahoma City Thunder', 'Thunder')
-      .replace('Cleveland Cavaliers', 'Cavaliers')
-      .replace('Houston Rockets', 'Rockets')
-      .replace('Brooklyn Nets', 'Nets')
-      .replace('Philadelphia 76ers', '76ers')
-      .replace('Washington Wizards', 'Wizards');
-  }
+  const { pct, shortTeam } = Court;
 
   function zoneShare(stint, zone) {
     return stint.zones.find(z => z.zone === zone)?.share || 0;

@@ -47,32 +47,11 @@
   });
   seasonSel.value = teamsRaw.seasons[teamsRaw.seasons.length - 1];
 
-  function pct(v) { return `${(v * 100).toFixed(1)}%`; }
+  const { pct, shortTeam } = Court;
   function ppDiff(teamShare, leagueShare) {
     const d = (teamShare - leagueShare) * 100;
     const sign = d > 0 ? '+' : '';
     return `${sign}${d.toFixed(1)} pp`;
-  }
-
-  function shortTeam(name) {
-    return name
-      .replace('Golden State Warriors', 'Warriors')
-      .replace('Los Angeles Lakers', 'Lakers')
-      .replace('Los Angeles Clippers', 'Clippers')
-      .replace('Oklahoma City Thunder', 'Thunder')
-      .replace('Cleveland Cavaliers', 'Cavaliers')
-      .replace('Houston Rockets', 'Rockets')
-      .replace('Brooklyn Nets', 'Nets')
-      .replace('Philadelphia 76ers', '76ers')
-      .replace('Washington Wizards', 'Wizards')
-      .replace('San Antonio Spurs', 'Spurs')
-      .replace('Boston Celtics', 'Celtics')
-      .replace('Denver Nuggets', 'Nuggets')
-      .replace('Miami Heat', 'Heat')
-      .replace('Milwaukee Bucks', 'Bucks')
-      .replace('Phoenix Suns', 'Suns')
-      .replace('Dallas Mavericks', 'Mavs')
-      .replace('New York Knicks', 'Knicks');
   }
 
   function populateTeams() {

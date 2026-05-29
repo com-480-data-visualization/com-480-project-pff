@@ -7,12 +7,11 @@
   const wrapEl = document.querySelector('.fingerprint-wrap');
 
   const C = Court;
-  const CORNER_Y_DATA = 5.25 + Math.sqrt(23.75 ** 2 - 22 ** 2);
-  const CORNER_SVG_Y = C.toY(CORNER_Y_DATA);
-  const CORNER_XL = C.toX(-22);
-  const CORNER_XR = C.toX(22);
-  const FT_Y = C.toY(19);
-  const R3_PX = 23.75 * C.SCALE;
+  const CORNER_SVG_Y = C.CORNER_SVG_Y;
+  const CORNER_XL = C.CORNER_SVG_XL;
+  const CORNER_XR = C.CORNER_SVG_XR;
+  const FT_Y = C.FT_SVG_Y;
+  const R3_PX = C.R3;
   const RESTRICTED_R = 40;
   const restrictedCircle = `M ${C.BX},${C.BY} m -${RESTRICTED_R},0 a ${RESTRICTED_R},${RESTRICTED_R} 0 1,0 ${RESTRICTED_R * 2},0 a ${RESTRICTED_R},${RESTRICTED_R} 0 1,0 -${RESTRICTED_R * 2},0`;
   const paintRect = `M ${C.toX(-8)},${C.H} L ${C.toX(8)},${C.H} L ${C.toX(8)},${FT_Y} L ${C.toX(-8)},${FT_Y} Z`;
@@ -50,7 +49,7 @@
   Court.drawCourt(miniCourtSvg, { color: '#505070', opacity: 0.7, lw: 1 });
   const MINI_COURT_LINES = miniCourtSvg.select('.court-lines').node().outerHTML;
 
-  function pct(v) { return `${(v * 100).toFixed(1)}%`; }
+  const pct = Court.pct;
 
   function zoneInsight(d, overallFg) {
     if (!d.n) return 'No shots recorded in this zone.';
